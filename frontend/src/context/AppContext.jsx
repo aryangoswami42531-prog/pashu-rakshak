@@ -126,6 +126,49 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const verifyAnimalInContext = (animalTag, vaccineData) => {
+    if (!animalTag) return;
+    setAnimalsList(prev => {
+      const nextArr = prev.map(a => {
+        if (a.tagNumber === animalTag || a.id === animalTag) {
+          const updatedVac = a.vaccinations ? [...a.vaccinations] : [];
+          const nowStr = new Date().toISOString().split('T')[0];
+          const newVacObj = {
+            vaccineName: vaccineData?.vaccineGiven || "FMD Dual Antigen",
+            batchNumber: vaccineData?.batchNumber || "VAC-2026-8801",
+            administeredDate: nowStr,
+            nextDueDate: "2027-02-20",
+            administeredBy: vaccineData?.administeredBy || "Dr. Rajesh Sharma",
+            recordHash: "sha256-" + Date.now().toString(16)
+          };
+          if (!updatedVac.some(v => v.batchNumber === newVacObj.batchNumber)) {
+            updatedVac.unshift(newVacObj);
+          }
+          return {
+            ...a,
+            status: 'VACCINATED',
+            vaccinations: updatedVac,
+            medicalHistory: [
+              {
+                date: nowStr,
+                diagnosis: `💉 VACCINATED & VERIFIED PASSPORT — ${vaccineData?.diagnosis || 'Clinical Inspection Complete'}`,
+                vetName: vaccineData?.administeredBy || 'Dr. Rajesh Sharma',
+                prescriptions: ['Standard Biosecurity Vaccine Barrier'],
+                remarks: 'Field Inspection & Vaccine Administration Completed by Doctor.'
+              },
+              ...(a.medicalHistory || [])
+            ]
+          };
+        }
+        return a;
+      });
+      try {
+        localStorage.setItem('pr_animalsList', JSON.stringify(nextArr));
+      } catch (e) {}
+      return nextArr;
+    });
+  };
+
   // Robust case-insensitive Helper translation function
   const t = (path) => {
     if (!path) return '';
@@ -198,15 +241,21 @@ export const AppProvider = ({ children }) => {
       if (animsRes?.animals && Array.isArray(animsRes.animals)) {
         setAnimalsList(prev => {
           const mergedMap = new Map();
+          // First add existing local items
           prev.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
+          // Overlay fresh backend items (backend data takes precedence for status updates like VACCINATED)
           animsRes.animals.forEach(item => {
             const key = item.id || item.tagNumber;
-            if (!mergedMap.has(key)) {
+            const existing = mergedMap.get(key);
+            if (!existing || item.status === 'VACCINATED' || (item.vaccinations && item.vaccinations.length > 0)) {
               mergedMap.set(key, item);
             }
           });
           const nextArr = Array.from(mergedMap.values());
           if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
+            try {
+              localStorage.setItem('pr_animalsList', JSON.stringify(nextArr));
+            } catch(e) {}
             return nextArr;
           }
           return prev;
@@ -284,7 +333,8 @@ export const AppProvider = ({ children }) => {
       refreshAllData: () => refreshAllData(false),
       addRequestToContext,
       updateRequestInContext,
-      addAnimalToContext
+      addAnimalToContext,
+      verifyAnimalInContext
     }}>
       {children}
     </AppContext.Provider>

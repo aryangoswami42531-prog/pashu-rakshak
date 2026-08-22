@@ -17,7 +17,7 @@ const reqIcon = new L.Icon({
 });
 
 export const VetDashboard = ({ activeTab = 'QUEUE', setActiveTab }) => {
-  const { t, requestsList, refreshAllData, showToast, updateRequestInContext } = useApp();
+  const { t, requestsList, refreshAllData, showToast, updateRequestInContext, verifyAnimalInContext } = useApp();
   const [dutyStatus, setDutyStatus] = useState('AVAILABLE');
   const [selectedReq, setSelectedReq] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -100,6 +100,14 @@ export const VetDashboard = ({ activeTab = 'QUEUE', setActiveTab }) => {
         }
         if (updateRequestInContext) {
           updateRequestInContext(selectedReq.id, { status: 'COMPLETED' });
+        }
+        if (verifyAnimalInContext && selectedReq) {
+          verifyAnimalInContext(selectedReq.animalTag, {
+            vaccineGiven,
+            batchNumber,
+            diagnosis,
+            administeredBy: "Dr. Rajesh Sharma"
+          });
         }
         showToast("⚡ Inspection Logged & Verified! Red Spot removed from Govt Map.", "success");
         setIsReportModalOpen(false);
