@@ -133,7 +133,18 @@ export const SplashScreen = ({ onFinish }) => {
     // FORCE PLAY voiceover.mp3 IMMEDIATELY BY DEFAULT ON SPLASH SCREEN MOUNT
     triggerAudioPlay();
 
-    // Retry loop until audio starts playing automatically
+    // Web Audio Context & automatic trigger on any window event (focus, mousemove, load, scroll, etc.)
+    const events = ['mousemove', 'pointermove', 'mouseover', 'mouseenter', 'focus', 'scroll', 'keydown', 'click', 'pointerdown', 'touchstart'];
+    
+    const handleAutoUnlock = () => {
+      triggerAudioPlay();
+    };
+
+    events.forEach(evt => {
+      window.addEventListener(evt, handleAutoUnlock, { passive: true });
+    });
+
+    // Fast retry loop until audio starts playing automatically
     const intervalId = setInterval(() => {
       if (audioRef.current && audioRef.current.paused) {
         triggerAudioPlay();
@@ -142,15 +153,6 @@ export const SplashScreen = ({ onFinish }) => {
       }
     }, 100);
 
-    // Backup gesture unlock listeners
-    const handleUserUnlock = () => {
-      triggerAudioPlay();
-    };
-
-    window.addEventListener('click', handleUserUnlock);
-    window.addEventListener('pointerdown', handleUserUnlock);
-    window.addEventListener('touchstart', handleUserUnlock);
-
     // Safety fallback timer: max 12s splash cap to allow full voiceover duration
     const fallbackTimer = setTimeout(() => {
       finishSplash();
@@ -158,9 +160,9 @@ export const SplashScreen = ({ onFinish }) => {
 
     return () => {
       clearInterval(intervalId);
-      window.removeEventListener('click', handleUserUnlock);
-      window.removeEventListener('pointerdown', handleUserUnlock);
-      window.removeEventListener('touchstart', handleUserUnlock);
+      events.forEach(evt => {
+        window.removeEventListener(evt, handleAutoUnlock);
+      });
       clearTimeout(fallbackTimer);
     };
   }, []);
@@ -211,10 +213,7 @@ export const SplashScreen = ({ onFinish }) => {
 
   return (
     <div
-      onClick={() => {
-        triggerAudioPlay();
-      }}
-      className={`fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center overflow-hidden transition-opacity duration-700 cursor-pointer ${
+      className={`fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center overflow-hidden transition-opacity duration-700 ${
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
@@ -223,6 +222,7 @@ export const SplashScreen = ({ onFinish }) => {
         ref={audioRef}
         src="/voiceover.mp3"
         autoPlay
+        playsInline
         preload="auto"
         onEnded={handleAudioEnded}
       />
