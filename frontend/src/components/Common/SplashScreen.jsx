@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2 } from 'lucide-react';
 
 // ULTRA-PREMIUM CARTOON INDIAN FARMER WAVING HELLO (HI 👋) LOGO (NO CIRCLE BACKDROP)
 const WavingFarmerLogo = () => (
@@ -100,12 +99,15 @@ export const SplashScreen = ({ onFinish }) => {
   const [fadeOut, setFadeOut] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [videoCutReached, setVideoCutReached] = useState(false);
-  const [audioPlaying, setAudioPlaying] = useState(false);
   const isFinishedRef = useRef(false);
 
   const finishSplash = () => {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
 
     setFadeOut(true);
 
@@ -120,31 +122,27 @@ export const SplashScreen = ({ onFinish }) => {
       audioRef.current.volume = 1.0;
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setAudioPlaying(true);
-        }).catch(err => {
-          console.log("Splash audio autoplay check:", err);
-          setAudioPlaying(false);
+        playPromise.catch(err => {
+          console.log("Splash audio default autoplay check:", err);
         });
       }
     }
   };
 
   useEffect(() => {
-    // Attempt play immediately on component mount
+    // FORCE PLAY voiceover.mp3 IMMEDIATELY BY DEFAULT ON SPLASH SCREEN MOUNT
     triggerAudioPlay();
 
-    // Retry loop until audio starts playing
+    // Retry loop until audio starts playing automatically
     const intervalId = setInterval(() => {
       if (audioRef.current && audioRef.current.paused) {
         triggerAudioPlay();
       } else if (audioRef.current && !audioRef.current.paused) {
-        setAudioPlaying(true);
         clearInterval(intervalId);
       }
-    }, 150);
+    }, 100);
 
-    // Global listener backup for browser gesture unlocking
+    // Backup gesture unlock listeners
     const handleUserUnlock = () => {
       triggerAudioPlay();
     };
@@ -187,11 +185,9 @@ export const SplashScreen = ({ onFinish }) => {
 
         // If audio has ended or failed to start, finish splash
         if (audioRef.current && (audioRef.current.ended || audioRef.current.paused)) {
-          // If audio is playing, wait for handleAudioEnded
           if (!audioRef.current.paused && !audioRef.current.ended) {
             console.log("Video cut at 4.5s, keeping splash active while voiceover audio finishes...");
           } else {
-            // Give brief 1s pause if audio couldn't play
             setTimeout(() => {
               finishSplash();
             }, 1000);
@@ -222,7 +218,7 @@ export const SplashScreen = ({ onFinish }) => {
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Voiceover Audio Element (public/voiceover.mp3) */}
+      {/* Voiceover Audio Element (public/voiceover.mp3) - Plays ONLY during Splash Screen before login */}
       <audio
         ref={audioRef}
         src="/voiceover.mp3"
@@ -266,22 +262,6 @@ export const SplashScreen = ({ onFinish }) => {
             National Livestock Biosecurity Platform
           </p>
         </div>
-
-        {/* If audio was blocked by browser autoplay policy, show subtle Play Sound button */}
-        {!audioPlaying && (
-          <div className="pt-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerAudioPlay();
-              }}
-              className="inline-flex items-center gap-2 bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/80 text-emerald-300 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-all btn-pop cursor-pointer animate-pulse"
-            >
-              <Volume2 className="w-4 h-4 text-emerald-400" />
-              <span>आवाज प्ले करें (Play Audio)</span>
-            </button>
-          </div>
-        )}
 
         {/* Subtle Indicator Dots */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
