@@ -86,7 +86,12 @@ export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenCom
     try {
       const res = await fetch('/api/vets/request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({
           farmerName: "Local Farmer",
           farmerPhone: "+91 98711 22334",
@@ -120,89 +125,144 @@ export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenCom
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <img
           src="/famer.jpg"
-          alt="Farmer Portal Background"
-          className="w-full h-full object-cover opacity-75 filter brightness-100 contrast-105"
+          alt="Farmer Workspace Background"
+          className="w-full h-full object-cover opacity-75 filter brightness-105 contrast-105"
         />
-        {/* Soft Ambient Overlay for Optimal Visibility & UI Text Legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#030712]/70 via-[#030712]/50 to-[#030712]/80" />
+        {/* Soft Vignette Overlay for High Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030712]/60 via-[#030712]/40 to-[#030712]/70" />
       </div>
 
-      {/* Farm Overview Header Card */}
-      <div className="relative z-10 glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 bg-[#0B0F19]/90 hover:bg-[#0B0F19] shadow-2xl backdrop-blur-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">
-              {t('farmer.welcome')}
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-400 flex items-center gap-1.5 font-bold font-mono">
-              <MapPin className="w-4 h-4 text-emerald-400 shrink-0 animate-bounce" />
-              <span>{liveLocationStr}</span>
-            </p>
-          </div>
+      <div className="relative z-10 space-y-6">
+        
+        {/* Top Hero Welcome Card */}
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/60 bg-[#0B0F19]/90 relative overflow-hidden backdrop-blur-2xl shadow-2xl">
+          <div className="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
 
-          {/* REAL-TIME DYNAMIC METRICS BADGES */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* 1. Real-Time Farm Biosecurity Index */}
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-center shadow-inner relative overflow-hidden group">
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                {t('farmer.healthScore')}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] px-3 py-1 rounded-full font-bold font-mono uppercase tracking-wider">
+                  🌾 Farmer Node • Active Session
+                </span>
+                <span className="bg-slate-900 text-slate-300 border border-slate-800 text-[10px] px-2.5 py-1 rounded-full font-mono font-bold">
+                  {liveLocationStr}
+                </span>
               </div>
-              <div className={`text-2xl font-black ${biosecurityColorClass} mt-0.5 transition-colors duration-300`}>
-                {biosecurityIndex}%
-              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-display tracking-tight">
+                {t('farmer.title')}
+              </h1>
+              <p className="text-sm text-slate-300 max-w-xl">
+                {t('farmer.subtitle')}
+              </p>
             </div>
 
-            {/* 2. Real-Time Monitored Animals Count */}
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-center shadow-inner relative overflow-hidden group">
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                {t('farmer.activeAnimals')}
-              </div>
-              <div className="text-2xl font-black text-white mt-0.5 transition-colors duration-300">
-                {totalAnimalsCount}
-              </div>
-            </div>
+            {/* Quick Action Emergency Dispatch Button */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsLocationModalOpen(true)}
+                className="py-3.5 px-6 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-red-950/60 transition-all btn-pop cursor-pointer border border-red-500/40 animate-pulse"
+              >
+                <Stethoscope className="w-4 h-4 text-white" />
+                <span>Dispatch Emergency Vet Request</span>
+              </button>
 
-            {/* 3. Real-Time Available Nearby Vets Count */}
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-center shadow-inner relative overflow-hidden group">
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                Nearby Vets
-              </div>
-              <div className="text-2xl font-black text-blue-400 mt-0.5 transition-colors duration-300">
-                {availableVetsCount}
-              </div>
+              <button
+                onClick={onOpenComplaint}
+                className="py-3.5 px-5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-extrabold flex items-center gap-2 transition-all btn-pop cursor-pointer backdrop-blur-xl"
+              >
+                <FileWarning className="w-4 h-4 text-amber-400" />
+                <span>Report Grievance</span>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* 3 Real-time Farm Biosecurity Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          
+          {/* Metric 1: Registered Livestock Count */}
+          <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-[#0B0F19]/90 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div>
+              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono">
+                Total Registered Livestock
+              </div>
+              <div className="text-3xl font-black text-white font-mono mt-1">
+                {totalAnimalsCount}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Animals with Digital Passports
+              </div>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl">
+              🐄
+            </div>
+          </div>
+
+          {/* Metric 2: Live Farm Biosecurity Index */}
+          <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-[#0B0F19]/90 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div>
+              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono">
+                Farm Biosecurity Index
+              </div>
+              <div className={`text-3xl font-black font-mono mt-1 ${biosecurityColorClass}`}>
+                {biosecurityIndex}%
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                {verifiedHealthyCount} of {totalAnimalsCount} Verified Safe
+              </div>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 border border-emerald-800 flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-emerald-400" />
+            </div>
+          </div>
+
+          {/* Metric 3: Verified Vet Officers Available */}
+          <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-[#0B0F19]/90 backdrop-blur-xl flex items-center justify-between shadow-xl">
+            <div>
+              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono">
+                Available Vet Officers
+              </div>
+              <div className="text-3xl font-black text-blue-400 font-mono mt-1">
+                {availableVetsCount}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                District Sector Active Range
+              </div>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-blue-950/80 border border-blue-800 flex items-center justify-center">
+              <Stethoscope className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Tab Navigation Workspace Sub-Views */}
+        <div className="w-full">
+          {activeTab === 'SCANNER' && (
+            <AISymptomScanner onRequestVet={handleAiRequestVet} />
+          )}
+
+          {activeTab === 'HEALTH_RECORDS' && (
+            <HealthRecords />
+          )}
+
+          {activeTab === 'VET_LOCATOR' && (
+            <VetLocator onRequestVet={handleAiRequestVet} />
+          )}
+
+          {activeTab === 'MY_CASES' && (
+            <MyCasesView />
+          )}
+        </div>
+
       </div>
 
-      {/* Main Spacious Content Workspace */}
-      <div className="relative z-10 w-full">
-        {activeTab === 'SCANNER' && (
-          <AISymptomScanner onRequestVet={handleAiRequestVet} />
-        )}
-
-        {activeTab === 'MY_CASES' && (
-          <MyCasesView 
-            onNavigateToScanner={() => setActiveTab('SCANNER')} 
-          />
-        )}
-
-        {activeTab === 'VET_LOCATOR' && (
-          <VetLocator 
-            prefilledAiResult={prefilledAiResult}
-          />
-        )}
-
-        {activeTab === 'HEALTH_RECORDS' && (
-          <HealthRecords />
-        )}
-      </div>
-
-      {/* Farm Location Modal for Emergency Vet Request */}
+      {/* Farm GPS Location & Dispatch Modal */}
       <FarmLocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
         onConfirm={handleConfirmLocationAndDispatch}
+        aiResult={prefilledAiResult}
       />
     </div>
   );

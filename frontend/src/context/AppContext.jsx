@@ -3,6 +3,23 @@ import { translations } from '../i18n/translations';
 
 const AppContext = createContext();
 
+// Helper to append no-cache headers to prevent stale Vercel CDN/edge responses
+const fetchNoCache = async (url, options = {}) => {
+  const defaultHeaders = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+  return fetch(url, {
+    ...options,
+    cache: 'no-store',
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {})
+    }
+  });
+};
+
 export const AppProvider = ({ children }) => {
   const [activeRole, setActiveRole] = useState('FARMER'); // FARMER, VET, ADMIN
   const [activeLang, setActiveLang] = useState('EN'); // EN, HI
@@ -99,13 +116,14 @@ export const AppProvider = ({ children }) => {
         setIsLoading(true);
       }
 
+      // Add cache: 'no-store' & anti-cache headers to ALL endpoint fetches
       const [vetsRes, reqsRes, animsRes, outbRes, alertsRes, cmplRes] = await Promise.all([
-        fetch('/api/vets').then(r => r.json()).catch(() => null),
-        fetch('/api/vets/requests').then(r => r.json()).catch(() => null),
-        fetch('/api/records').then(r => r.json()).catch(() => null),
-        fetch('/api/outbreaks/summary').then(r => r.json()).catch(() => null),
-        fetch('/api/outbreaks/alerts').then(r => r.json()).catch(() => null),
-        fetch('/api/complaints').then(r => r.json()).catch(() => null)
+        fetchNoCache('/api/vets').then(r => r.json()).catch(() => null),
+        fetchNoCache('/api/vets/requests').then(r => r.json()).catch(() => null),
+        fetchNoCache('/api/records').then(r => r.json()).catch(() => null),
+        fetchNoCache('/api/outbreaks/summary').then(r => r.json()).catch(() => null),
+        fetchNoCache('/api/outbreaks/alerts').then(r => r.json()).catch(() => null),
+        fetchNoCache('/api/complaints').then(r => r.json()).catch(() => null)
       ]);
 
       if (vetsRes?.vets && Array.isArray(vetsRes.vets)) {

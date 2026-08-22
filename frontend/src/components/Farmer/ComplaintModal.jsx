@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { AlertCircle, X, Send, ShieldAlert } from 'lucide-react';
+import { ShieldAlert, X, Send } from 'lucide-react';
 
 export const ComplaintModal = ({ isOpen, onClose }) => {
   const { vetsList, showToast, refreshAllData } = useApp();
-  const [vetId, setVetId] = useState(vetsList[0]?.id || '');
-  const [issueType, setIssueType] = useState('DELAYED_RESPONSE');
+  const [vetId, setVetId] = useState('vet-101');
+  const [issueType, setIssueType] = useState('UNRESPONSIVE_VET');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,7 +23,12 @@ export const ComplaintModal = ({ isOpen, onClose }) => {
     try {
       const res = await fetch('/api/complaints', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({
           farmerName: "Harpreet Singh",
           farmerPhone: "+91 98711 22334",
@@ -58,65 +63,63 @@ export const ComplaintModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <p className="text-xs text-slate-400">
-          This complaint will be directly audited by District Biosecurity Cell & District Magistrate.
-        </p>
-
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="text-slate-300 font-semibold block mb-1">Select Officer:</label>
+          <div className="space-y-1.5">
+            <label className="text-slate-300 font-bold">Select Veterinary Officer</label>
             <select
               value={vetId}
-              onChange={e => setVetId(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
+              onChange={(e) => setVetId(e.target.value)}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
             >
               {vetsList.map(v => (
-                <option key={v.id} value={v.id}>{v.name} ({v.designation})</option>
+                <option key={v.id} value={v.id}>
+                  {v.name} ({v.district})
+                </option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="text-slate-300 font-semibold block mb-1">Issue Category:</label>
+          <div className="space-y-1.5">
+            <label className="text-slate-300 font-bold">Grievance Issue Type</label>
             <select
               value={issueType}
-              onChange={e => setIssueType(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
+              onChange={(e) => setIssueType(e.target.value)}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
             >
-              <option value="DELAYED_RESPONSE">Delayed / No Emergency Response (&gt; 4 hours)</option>
-              <option value="UNPROFESSIONAL_BEHAVIOR">Unprofessional Conduct</option>
-              <option value="FEE_EXORTION">Refusal to Provide Vaccination / Extra Fee Demand</option>
-              <option value="FALSE_REPORTS">False Health Certificate Issue</option>
+              <option value="UNRESPONSIVE_VET">Doctor Unresponsive to Emergency Dispatch</option>
+              <option value="DELAYED_VISIT">Severe Delay in Field Inspection</option>
+              <option value="WRONG_DIAGNOSIS">Incorrect Prescription or Treatment</option>
+              <option value="OVERCHARGING">Overcharging for Free Vaccines</option>
             </select>
           </div>
 
-          <div>
-            <label className="text-slate-300 font-semibold block mb-1">Detailed Description & Incident Time:</label>
+          <div className="space-y-1.5">
+            <label className="text-slate-300 font-bold">Detailed Incident Description</label>
             <textarea
+              rows={3}
               required
-              rows={4}
               value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Describe what happened, requested time, and emergency severity..."
-              className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the incident, delay duration, and impact on your livestock..."
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-red-500 focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="pt-2 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-slate-400 hover:text-white"
+              className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold flex items-center gap-2 shadow-lg shadow-red-600/30"
+              className="py-2.5 px-5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold flex items-center gap-1.5 shadow-lg shadow-red-600/30 btn-pop"
             >
               <Send className="w-4 h-4" />
-              <span>{isSubmitting ? 'Filing...' : 'Lodge Official Complaint'}</span>
+              <span>{isSubmitting ? 'Submitting Grievance...' : 'Submit Official Grievance'}</span>
             </button>
           </div>
         </form>
