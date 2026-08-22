@@ -8,14 +8,65 @@ export const AppProvider = ({ children }) => {
   const [activeLang, setActiveLang] = useState('EN'); // EN, HI
   const [toasts, setToasts] = useState([]);
   
-  // Real-time state caches
+  // Real-time state caches with LocalStorage persistence to prevent data loss or flickering
   const [vetsList, setVetsList] = useState([]);
-  const [requestsList, setRequestsList] = useState([]);
-  const [animalsList, setAnimalsList] = useState([]);
+  
+  const [requestsList, setRequestsList] = useState(() => {
+    try {
+      const cached = localStorage.getItem('pr_requestsList');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [animalsList, setAnimalsList] = useState(() => {
+    try {
+      const cached = localStorage.getItem('pr_animalsList');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [outbreaksSummary, setOutbreaksSummary] = useState(null);
   const [alertsList, setAlertsList] = useState([]);
-  const [complaintsList, setComplaintsList] = useState([]);
+  
+  const [complaintsList, setComplaintsList] = useState(() => {
+    try {
+      const cached = localStorage.getItem('pr_complaintsList');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sync state changes to LocalStorage for persistent offline-first stability
+  useEffect(() => {
+    try {
+      if (requestsList.length > 0) {
+        localStorage.setItem('pr_requestsList', JSON.stringify(requestsList));
+      }
+    } catch (e) {}
+  }, [requestsList]);
+
+  useEffect(() => {
+    try {
+      if (animalsList.length > 0) {
+        localStorage.setItem('pr_animalsList', JSON.stringify(animalsList));
+      }
+    } catch (e) {}
+  }, [animalsList]);
+
+  useEffect(() => {
+    try {
+      if (complaintsList.length > 0) {
+        localStorage.setItem('pr_complaintsList', JSON.stringify(complaintsList));
+      }
+    } catch (e) {}
+  }, [complaintsList]);
 
   // Robust case-insensitive Helper translation function
   const t = (path) => {
@@ -41,10 +92,13 @@ export const AppProvider = ({ children }) => {
     }, 4500);
   };
 
-  // Fetch initial backend state
-  const refreshAllData = async () => {
+  // Fetch backend state seamlessly without triggering UI loading flicker
+  const refreshAllData = async (isInitial = false) => {
     try {
-      setIsLoading(true);
+      if (isInitial) {
+        setIsLoading(true);
+      }
+
       const [vetsRes, reqsRes, animsRes, outbRes, alertsRes, cmplRes] = await Promise.all([
         fetch('/api/vets').then(r => r.json()).catch(() => null),
         fetch('/api/vets/requests').then(r => r.json()).catch(() => null),
@@ -54,25 +108,62 @@ export const AppProvider = ({ children }) => {
         fetch('/api/complaints').then(r => r.json()).catch(() => null)
       ]);
 
-      if (vetsRes?.vets) setVetsList(vetsRes.vets);
-      if (reqsRes?.requests) setRequestsList(reqsRes.requests);
-      if (animsRes?.animals) setAnimalsList(animsRes.animals);
-      if (outbRes) setOutbreaksSummary(outbRes);
-      if (alertsRes?.alerts) setAlertsList(alertsRes.alerts);
-      if (cmplRes?.complaints) setComplaintsList(cmplRes.complaints);
+      if (vetsRes?.vets) {
+        setVetsList(vetsRes.vets);
+      }
+
+      if (reqsRes?.requests && Array.isArray(reqsRes.requests)) {
+        setRequestsList(prev => {
+          // Merge incoming requests with existing local requests to avoid dropping user created cases
+          const mergedMap = new Map();
+          // First add existing local requests
+          prev.forEach(item => mergedMap.set(item.id, item));
+          // Overlay backend requests
+          reqsRes.requests.forEach(item => mergedMap.set(item.id, item));
+          return Array.from(mergedMap.values());
+        });
+      }
+
+      if (animsRes?.animals && Array.isArray(animsRes.animals)) {
+        setAnimalsList(prev => {
+          const mergedMap = new Map();
+          prev.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
+          animsRes.animals.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
+          return Array.from(mergedMap.values());
+        });
+      }
+
+      if (outbRes) {
+        setOutbreaksSummary(outbRes);
+      }
+
+      if (alertsRes?.alerts) {
+        setAlertsList(alertsRes.alerts);
+      }
+
+      if (cmplRes?.complaints && Array.isArray(cmplRes.complaints)) {
+        setComplaintsList(prev => {
+          const mergedMap = new Map();
+          prev.forEach(item => mergedMap.set(item.id, item));
+          cmplRes.complaints.forEach(item => mergedMap.set(item.id, item));
+          return Array.from(mergedMap.values());
+        });
+      }
 
     } catch (err) {
       console.error("Error loading app data:", err);
     } finally {
-      setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    refreshAllData();
-    // Real-time polling interval so Vet acceptance syncs instantly to Farmer screen
+    refreshAllData(true);
+    // Real-time background sync interval (silent without toggling isLoading)
     const interval = setInterval(() => {
-      refreshAllData();
+      refreshAllData(false);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -93,7 +184,7 @@ export const AppProvider = ({ children }) => {
       alertsList,
       complaintsList,
       isLoading,
-      refreshAllData
+      refreshAllData: () => refreshAllData(false)
     }}>
       {children}
     </AppContext.Provider>
