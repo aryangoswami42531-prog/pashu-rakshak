@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenComplaint }) => {
-  const { t, animalsList, vetsList, requestsList, refreshAllData, showToast } = useApp();
+  const { t, animalsList, vetsList, requestsList, refreshAllData, showToast, addRequestToContext, addAnimalToContext } = useApp();
   const [prefilledAiResult, setPrefilledAiResult] = useState(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [liveLocationStr, setLiveLocationStr] = useState('Detecting Current GPS Location...');
@@ -108,6 +108,12 @@ export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenCom
       });
       const data = await res.json();
       if (data.success) {
+        if (data.request && addRequestToContext) {
+          addRequestToContext(data.request);
+        }
+        if (data.animal && addAnimalToContext) {
+          addAnimalToContext(data.animal);
+        }
         showToast(`🚨 Request Dispatched! Waiting for Doctor Visit.`, "success");
         refreshAllData();
         // Automatically switch to My Reported Cases tab so farmer immediately sees active case

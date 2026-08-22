@@ -85,6 +85,47 @@ export const AppProvider = ({ children }) => {
     } catch (e) {}
   }, [complaintsList]);
 
+  // Direct state mutation helpers for zero-delay UI reactivity
+  const addRequestToContext = (newReq) => {
+    if (!newReq || !newReq.id) return;
+    setRequestsList(prev => {
+      const filtered = prev.filter(r => r.id !== newReq.id && r.animalTag !== newReq.animalTag);
+      const nextArr = [newReq, ...filtered];
+      try {
+        localStorage.setItem('pr_requestsList', JSON.stringify(nextArr));
+      } catch (e) {}
+      return nextArr;
+    });
+  };
+
+  const updateRequestInContext = (reqId, updatedFields) => {
+    if (!reqId) return;
+    setRequestsList(prev => {
+      const nextArr = prev.map(r => {
+        if (r.id === reqId || r.animalTag === reqId) {
+          return { ...r, ...updatedFields };
+        }
+        return r;
+      });
+      try {
+        localStorage.setItem('pr_requestsList', JSON.stringify(nextArr));
+      } catch (e) {}
+      return nextArr;
+    });
+  };
+
+  const addAnimalToContext = (newAnim) => {
+    if (!newAnim) return;
+    setAnimalsList(prev => {
+      const filtered = prev.filter(a => a.id !== newAnim.id && a.tagNumber !== newAnim.tagNumber);
+      const nextArr = [newAnim, ...filtered];
+      try {
+        localStorage.setItem('pr_animalsList', JSON.stringify(nextArr));
+      } catch (e) {}
+      return nextArr;
+    });
+  };
+
   // Robust case-insensitive Helper translation function
   const t = (path) => {
     if (!path) return '';
@@ -138,17 +179,19 @@ export const AppProvider = ({ children }) => {
       if (reqsRes?.requests && Array.isArray(reqsRes.requests)) {
         setRequestsList(prev => {
           const mergedMap = new Map();
-          // First add existing local requests
+          // Priority to local user-submitted/updated requests first
           prev.forEach(item => mergedMap.set(item.id, item));
-          // Overlay backend requests
-          reqsRes.requests.forEach(item => mergedMap.set(item.id, item));
+          reqsRes.requests.forEach(item => {
+            if (!mergedMap.has(item.id)) {
+              mergedMap.set(item.id, item);
+            }
+          });
           const nextArr = Array.from(mergedMap.values());
           
-          // Strict Reference Stability Check: Only trigger React update if content actually changed!
           if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
             return nextArr;
           }
-          return prev; // Return exact same array reference if unchanged -> STOP UI FLICKER!
+          return prev;
         });
       }
 
@@ -156,7 +199,12 @@ export const AppProvider = ({ children }) => {
         setAnimalsList(prev => {
           const mergedMap = new Map();
           prev.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
-          animsRes.animals.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
+          animsRes.animals.forEach(item => {
+            const key = item.id || item.tagNumber;
+            if (!mergedMap.has(key)) {
+              mergedMap.set(key, item);
+            }
+          });
           const nextArr = Array.from(mergedMap.values());
           if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
             return nextArr;
@@ -187,7 +235,11 @@ export const AppProvider = ({ children }) => {
         setComplaintsList(prev => {
           const mergedMap = new Map();
           prev.forEach(item => mergedMap.set(item.id, item));
-          cmplRes.complaints.forEach(item => mergedMap.set(item.id, item));
+          cmplRes.complaints.forEach(item => {
+            if (!mergedMap.has(item.id)) {
+              mergedMap.set(item.id, item);
+            }
+          });
           const nextArr = Array.from(mergedMap.values());
           if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
             return nextArr;
@@ -207,7 +259,6 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     refreshAllData(true);
-    // Real-time background sync interval (silent without toggling isLoading or changing unchanged array references)
     const interval = setInterval(() => {
       refreshAllData(false);
     }, 4000);
@@ -230,7 +281,10 @@ export const AppProvider = ({ children }) => {
       alertsList,
       complaintsList,
       isLoading,
-      refreshAllData: () => refreshAllData(false)
+      refreshAllData: () => refreshAllData(false),
+      addRequestToContext,
+      updateRequestInContext,
+      addAnimalToContext
     }}>
       {children}
     </AppContext.Provider>

@@ -31,7 +31,7 @@ Traditional reporting relies on manual record-keeping and delayed official notif
 | Domain | Technologies & Libraries Used |
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Vanilla CSS + TailwindCSS, Lucide Icons, Leaflet / React-Leaflet |
-| **Backend** | Node.js, Express.js, RESTful API Architecture, In-Memory Shared Biosecurity Store |
+| **Backend** | Node.js, Express.js, RESTful API Architecture, Serverless-Friendly Persistent Store & LocalStorage Dual-Sync Engine |
 | **AI / Diagnostic Logic** | Multi-Stage Rule-Based Epidemiological Inference Engine & Clinical Symptom Matching |
 | **Gis & Mapping** | OpenStreetMap, Leaflet GIS, Haversine Proximity Calculation |
 | **Audio & Media** | ElevenLabs AI Voice Narrations, HTML5 Video & Audio Media Players |
