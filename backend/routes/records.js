@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { animalsList, generateHash } = require('../data/sharedStore');
+const { store, generateHash } = require('../data/sharedStore');
 
 /**
  * GET /api/records
@@ -8,7 +8,7 @@ const { animalsList, generateHash } = require('../data/sharedStore');
  */
 router.get('/', (req, res) => {
   const { farmId, species } = req.query;
-  let result = [...animalsList];
+  let result = store.getAnimals();
 
   if (farmId) {
     result = result.filter(a => a.farmId === farmId);
@@ -29,6 +29,7 @@ router.get('/', (req, res) => {
  */
 router.get('/:id', (req, res) => {
   const { id } = req.params;
+  const animalsList = store.getAnimals();
   const animal = animalsList.find(a => a.id === id || a.tagNumber === id);
   if (!animal) {
     return res.status(404).json({ success: false, message: "Animal record not found" });
@@ -42,6 +43,7 @@ router.get('/:id', (req, res) => {
  */
 router.get('/verify/:hash', (req, res) => {
   const { hash } = req.params;
+  const animalsList = store.getAnimals();
 
   let foundVaccine = null;
   let targetAnimal = null;
@@ -112,7 +114,7 @@ router.post('/', (req, res) => {
       ]
     };
 
-    animalsList.unshift(newAnimal);
+    store.addAnimal(newAnimal);
 
     res.json({
       success: true,
@@ -131,6 +133,7 @@ router.post('/', (req, res) => {
 router.post('/vaccine', (req, res) => {
   try {
     const { animalId, vaccineName, batchNumber, nextDueDate, administeredBy } = req.body;
+    const animalsList = store.getAnimals();
 
     const animal = animalsList.find(a => a.id === animalId || a.tagNumber === animalId);
     if (!animal) {
@@ -154,6 +157,7 @@ router.post('/vaccine', (req, res) => {
       recordHash
     };
 
+    if (!animal.vaccinations) animal.vaccinations = [];
     animal.vaccinations.unshift(vacObj);
     animal.healthStatus = "HEALTHY";
 

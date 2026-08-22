@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { vetsList, requestsList, animalsList, outbreaksList, generateHash } = require('../data/sharedStore');
+const { store, generateHash } = require('../data/sharedStore');
 
 // Helper: Haversine distance in KM between 2 GPS coords
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -17,107 +17,61 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 /**
  * GET /api/vets/requests
- * Returns all active & completed farmer vet dispatch requests
+ * Returns all active & completed farmer vet dispatch requests from persistent store
  */
 router.get('/requests', (req, res) => {
+  const reqs = store.getRequests();
   res.json({
     success: true,
-    total: requestsList.length,
-    requests: requestsList
+    total: reqs.length,
+    requests: reqs
   });
 });
 
 /**
  * PUT /api/vets/requests/:id
- * Update request status (e.g. ACCEPTED, ON_WAY, COMPLETED)
+ * Update request status (e.g. ACCEPTED, ON_WAY, COMPLETED) in persistent store
  */
 router.put('/requests/:id', (req, res) => {
   const reqId = req.params.id;
   const { status, etaMinutes } = req.body;
-  const targetReq = requestsList.find(r => r.id === reqId);
   
-  if (targetReq) {
-    targetReq.status = status || targetReq.status;
-    if (etaMinutes) targetReq.etaMinutes = etaMinutes;
+  const updatedReq = store.updateRequestStatus(reqId, status, etaMinutes);
+  
+  if (updatedReq) {
     return res.json({
       success: true,
-      message: `Request ${reqId} status updated to ${targetReq.status}`,
-      request: targetReq
+      message: `Request ${reqId} status updated to ${updatedReq.status}`,
+      request: updatedReq
     });
   }
+  
   res.status(404).json({ success: false, message: "Request not found" });
 });
 
 /**
  * POST /api/vets/visit-report
- * Vet logs field inspection & diagnosis -> Marks request as COMPLETED & REMOVES Red Spot from Govt Map
+ * Vet logs field inspection & diagnosis -> Marks request as COMPLETED in persistent store
  */
 router.post('/visit-report', (req, res) => {
   try {
     const { requestId, animalTag, diagnosis, treatmentAdministered, vaccineGiven, batchNumber, followUpDate, vetName } = req.body;
     
-    // Find target request and mark status as COMPLETED
-    const targetReq = requestsList.find(r => r.id === requestId || r.animalTag === animalTag);
-    if (targetReq) {
-      targetReq.status = "COMPLETED";
-      targetReq.completedAt = new Date().toISOString();
-      targetReq.inspectionLog = {
-        diagnosis,
-        treatmentAdministered,
-        vaccineGiven,
-        batchNumber,
-        followUpDate,
-        vetName: vetName || "Dr. Rajesh Sharma"
-      };
+    const inspectionLog = {
+      diagnosis,
+      treatmentAdministered,
+      vaccineGiven,
+      batchNumber,
+      followUpDate,
+      vetName: vetName || "Dr. Rajesh Sharma"
+    };
 
-      // REMOVE ANY RED SPOT OUTBREAK AT THIS LOCATION OR FOR THIS CASE!
-      if (targetReq.farmLocation) {
-        const targetLat = targetReq.farmLocation.lat;
-        const targetLng = targetReq.farmLocation.lng;
-
-        // Filter out any seed/active outbreak spot within 35km radius of this inspected farm
-        for (let i = outbreaksList.length - 1; i >= 0; i--) {
-          const ob = outbreaksList[i];
-          const obLat = ob.centerLocation ? ob.centerLocation.lat : (ob.lat || 30.9000);
-          const obLng = ob.centerLocation ? ob.centerLocation.lng : (ob.lng || 75.8500);
-          const dist = calculateDistance(targetLat, targetLng, obLat, obLng);
-          if (dist < 35 || ob.district === targetReq.village || ob.id === `farmer-spot-${requestId}`) {
-            outbreaksList.splice(i, 1);
-          }
-        }
-      }
-    }
-
-    // Also remove from outbreaksList if matching by ID directly
-    for (let i = outbreaksList.length - 1; i >= 0; i--) {
-      if (outbreaksList[i].id === `farmer-spot-${requestId}` || outbreaksList[i].requestId === requestId) {
-        outbreaksList.splice(i, 1);
-      }
-    }
-
-    // If no specific request, remove all outbreaks at default coordinates (e.g. Ludhiana demo spot)
-    if (!targetReq && outbreaksList.length > 0) {
-      outbreaksList.shift();
-    }
-
-    // Also update matching animal health record status
-    const targetAnimal = animalsList.find(a => a.tagNumber === animalTag);
-    if (targetAnimal) {
-      targetAnimal.status = "VERIFIED_PASSPORT";
-      if (!targetAnimal.medicalHistory) targetAnimal.medicalHistory = [];
-      targetAnimal.medicalHistory.unshift({
-        date: new Date().toISOString().split('T')[0],
-        diagnosis: diagnosis || "Clinical Field Inspection Complete",
-        vetName: vetName || "Dr. Rajesh Sharma",
-        prescriptions: [treatmentAdministered || "Standard Biosecurity Vaccine"],
-        remarks: "Field Inspection & Clinical Diagnosis Completed. Case Resolved."
-      });
-    }
+    const completedReq = store.completeRequest(requestId, animalTag, inspectionLog);
 
     res.json({
       success: true,
       message: `Field Inspection & Diagnosis Logged! Red Spot removed from Govt Map for Case #${animalTag || requestId}.`,
-      request: targetReq
+      request: completedReq
     });
   } catch (error) {
     console.error("Error logging visit report:", error);
@@ -130,6 +84,7 @@ router.post('/visit-report', (req, res) => {
  * Query: lat, lng, radius
  */
 router.get('/', (req, res) => {
+  const vetsList = store.getVets();
   const userLat = parseFloat(req.query.lat) || 30.8920;
   const userLng = parseFloat(req.query.lng) || 75.8450;
 
@@ -182,44 +137,6 @@ router.get('/', (req, res) => {
         avgResponseMinutes: 22,
         avatar: "https://images.unsplash.com/photo-1594824813566-88855ce78036?w=150&auto=format&fit=crop&q=80",
         distanceKm: calculateDistance(userLat, userLng, userLat - 0.018, userLng + 0.022)
-      },
-      {
-        id: "vet-local-103",
-        name: "Dr. Anil Kumar Patel",
-        qualification: "B.V.Sc & A.H.",
-        designation: "Mobile Veterinary Emergency Unit Lead",
-        phone: "+91 94567 12345",
-        email: "dr.anil.patel@gov.in",
-        district: "District Biosecurity Center",
-        state: "State Animal Husbandry Dept",
-        location: { lat: userLat + 0.028, lng: userLng - 0.019 },
-        address: "Mobile Emergency Vet Command Unit",
-        status: "AVAILABLE",
-        assignedRadiusKm: 30,
-        rating: 4.7,
-        completedVisits: 210,
-        avgResponseMinutes: 15,
-        avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80",
-        distanceKm: calculateDistance(userLat, userLng, userLat + 0.028, userLng - 0.019)
-      },
-      {
-        id: "vet-local-104",
-        name: "Dr. Harish Chandra",
-        qualification: "B.V.Sc & A.H., M.V.Sc (Surgery)",
-        designation: "Assistant Director Veterinary Services",
-        phone: "+91 97890 54321",
-        email: "dr.harish.chandra@gov.in",
-        district: "District Biosecurity Center",
-        state: "State Animal Husbandry Dept",
-        location: { lat: userLat - 0.035, lng: userLng - 0.028 },
-        address: "Regional Veterinary Hospital",
-        status: "AVAILABLE",
-        assignedRadiusKm: 35,
-        rating: 4.9,
-        completedVisits: 176,
-        avgResponseMinutes: 20,
-        avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80",
-        distanceKm: calculateDistance(userLat, userLng, userLat - 0.035, userLng - 0.028)
       }
     ];
 
@@ -240,6 +157,7 @@ router.get('/', (req, res) => {
  */
 router.post('/request', (req, res) => {
   try {
+    const vetsList = store.getVets();
     const farmLocation = req.body.farmLocation && req.body.farmLocation.lat ? req.body.farmLocation : { lat: 30.8920, lng: 75.8450 };
     const village = req.body.village || "Farmer Region";
     const farmerName = req.body.farmerName || "Local Farmer";
@@ -254,7 +172,6 @@ router.post('/request', (req, res) => {
 
     let assignedVet = vetsList.find(v => v.id === vetId);
     if (!assignedVet) {
-      // Find nearest available vet
       const sorted = vetsList.map(v => ({
         ...v,
         dist: calculateDistance(farmLocation.lat, farmLocation.lng, v.location.lat, v.location.lng)
@@ -283,9 +200,10 @@ router.post('/request', (req, res) => {
       notes
     };
 
-    requestsList.unshift(newRequest);
+    // SAVE TO PERSISTENT STORE
+    store.addRequest(newRequest);
 
-    // Automatically create animal health record in animalsList awaiting vet visit
+    // Automatically create animal health record in persistent store awaiting vet visit
     const nowStr = new Date().toISOString().split('T')[0];
     const newAnimal = {
       id: "anim-" + Date.now(),
@@ -312,7 +230,7 @@ router.post('/request', (req, res) => {
       ]
     };
 
-    animalsList.unshift(newAnimal);
+    store.addAnimal(newAnimal);
 
     res.json({
       success: true,

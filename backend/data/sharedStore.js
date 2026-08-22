@@ -1,15 +1,11 @@
-const { seedVets, seedVetRequests, seedAnimals, seedOutbreaks, generateHash } = require('./seedData');
-
-// Unified single in-memory store shared across all API routes (records, vets, ai, outbreaks)
-const vetsList = [...seedVets];
-const requestsList = [...seedVetRequests];
-const animalsList = [...seedAnimals];
-const outbreaksList = [...seedOutbreaks];
+const store = require('./store');
 
 module.exports = {
-  vetsList,
-  requestsList,
-  animalsList,
-  outbreaksList,
-  generateHash
+  vetsList: store.getVets(),
+  requestsList: store.getRequests(),
+  animalsList: store.getAnimals(),
+  outbreaksList: store.getOutbreaks(),
+  complaintsList: store.getComplaints(),
+  store,
+  generateHash: store.generateHash
 };

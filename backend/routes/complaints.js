@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { seedComplaints, seedVets } = require('../data/seedData');
-
-let complaintsList = [...seedComplaints];
+const { store } = require('../data/sharedStore');
+const { seedVets } = require('../data/seedData');
 
 /**
  * GET /api/complaints
  */
 router.get('/', (req, res) => {
+  const complaintsList = store.getComplaints();
   res.json({
     success: true,
     total: complaintsList.length,
@@ -40,7 +40,7 @@ router.post('/', (req, res) => {
       govtNotes: "Filed via Farmer Portal — Escalated to Govt Biosecurity Command."
     };
 
-    complaintsList.unshift(newComplaint);
+    store.addComplaint(newComplaint);
 
     res.json({
       success: true,
@@ -61,31 +61,30 @@ router.post('/:id/take-action', (req, res) => {
     const { id } = req.params;
     const { actionNotes = "Official Warning Issued by Govt Biosecurity Command" } = req.body;
 
-    const idx = complaintsList.findIndex(c => c.id === id);
-    if (idx === -1) {
+    const complaintsList = store.getComplaints();
+    const targetCmp = complaintsList.find(c => c.id === id);
+    if (!targetCmp) {
       return res.status(404).json({ success: false, message: "Complaint record not found" });
     }
 
-    const complaint = complaintsList[idx];
-    const vet = seedVets.find(v => v.id === complaint.vetId) || { name: complaint.vetName || "Dr. Rajesh Sharma", district: "Ludhiana" };
+    const vet = seedVets.find(v => v.id === targetCmp.vetId) || { name: targetCmp.vetName || "Dr. Rajesh Sharma", district: "Ludhiana" };
     
-    // Clean email generation without double dots (e.g. dr.rajesh.sharma@gov.in)
     const cleanName = vet.name.toLowerCase().replace(/dr\.?\s*/g, '').replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.').replace(/^\.|\.$/g, '');
     const emailTo = `dr.${cleanName}@gov.in`;
 
-    complaintsList[idx].status = "WARNING_ISSUED";
-    complaintsList[idx].govtNotes = actionNotes;
-    complaintsList[idx].actionTakenAt = new Date().toISOString();
-    complaintsList[idx].emailSentTo = emailTo;
+    targetCmp.status = "WARNING_ISSUED";
+    targetCmp.govtNotes = actionNotes;
+    targetCmp.actionTakenAt = new Date().toISOString();
+    targetCmp.emailSentTo = emailTo;
 
     res.json({
       success: true,
       message: `⚡ Automated Official Warning Email Sent to ${vet.name} (${emailTo})!`,
-      complaint: complaintsList[idx],
+      complaint: targetCmp,
       emailDetails: {
         to: emailTo,
-        subject: `OFFICIAL DISCIPLINARY MANDATE: Unresponsive Duty Notice #${complaint.id}`,
-        sentAt: complaintsList[idx].actionTakenAt
+        subject: `OFFICIAL DISCIPLINARY MANDATE: Unresponsive Duty Notice #${targetCmp.id}`,
+        sentAt: targetCmp.actionTakenAt
       }
     });
   } catch (err) {
@@ -100,19 +99,20 @@ router.put('/:id', (req, res) => {
   const { id } = req.params;
   const { status, govtNotes } = req.body;
 
-  const idx = complaintsList.findIndex(c => c.id === id);
-  if (idx === -1) {
+  const complaintsList = store.getComplaints();
+  const targetCmp = complaintsList.find(c => c.id === id);
+  if (!targetCmp) {
     return res.status(404).json({ success: false, message: "Complaint not found" });
   }
 
-  if (status) complaintsList[idx].status = status;
-  if (govtNotes) complaintsList[idx].govtNotes = govtNotes;
-  complaintsList[idx].updatedAt = new Date().toISOString();
+  if (status) targetCmp.status = status;
+  if (govtNotes) targetCmp.govtNotes = govtNotes;
+  targetCmp.updatedAt = new Date().toISOString();
 
   res.json({
     success: true,
     message: "Complaint status updated",
-    complaint: complaintsList[idx]
+    complaint: targetCmp
   });
 });
 

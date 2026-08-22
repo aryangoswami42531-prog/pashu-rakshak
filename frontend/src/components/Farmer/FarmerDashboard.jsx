@@ -108,10 +108,10 @@ export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenCom
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`🚨 Request Dispatched! Created Digital Health Passport (Waiting for Doctor Visit).`, "success");
+        showToast(`🚨 Request Dispatched! Waiting for Doctor Visit.`, "success");
         refreshAllData();
-        // Automatically switch to Digital Health Cards tab
-        if (setActiveTab) setActiveTab('HEALTH_RECORDS');
+        // Automatically switch to My Reported Cases tab so farmer immediately sees active case
+        if (setActiveTab) setActiveTab('MY_CASES');
       }
     } catch (err) {
       console.error(err);
