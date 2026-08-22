@@ -49,6 +49,26 @@ export const LoginPortal = ({ onSelectRole }) => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Unlock browser audio context on first click for Vercel Live Deployment
+  useEffect(() => {
+    const handleFirstClick = () => {
+      if (mainVoiceoverAudioRef.current && mainVoiceoverAudioRef.current.paused) {
+        mainVoiceoverAudioRef.current.currentTime = 0;
+        mainVoiceoverAudioRef.current.play().catch(err => {
+          console.log("Vercel Live user gesture audio unlock:", err);
+        });
+      }
+    };
+
+    window.addEventListener('click', handleFirstClick, { once: true });
+    window.addEventListener('touchstart', handleFirstClick, { once: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstClick);
+      window.removeEventListener('touchstart', handleFirstClick);
+    };
+  }, []);
+
   // Connect videoRef stream whenever farmer camera modal opens
   useEffect(() => {
     if (isFarmerCameraModalOpen && cameraStream && videoRef.current) {
@@ -292,7 +312,10 @@ export const LoginPortal = ({ onSelectRole }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden">
+    <div 
+      onClick={playMainVoiceover}
+      className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden"
+    >
       
       {/* Audio element for Main Voiceover (/voiceover.mp3) */}
       <audio
@@ -350,7 +373,10 @@ export const LoginPortal = ({ onSelectRole }) => {
           
           {/* Main Voiceover Audio Trigger Button */}
           <button
-            onClick={playMainVoiceover}
+            onClick={(e) => {
+              e.stopPropagation();
+              playMainVoiceover();
+            }}
             className="p-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-emerald-400 border border-emerald-700/80 transition-all btn-pop cursor-pointer backdrop-blur-xl flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-emerald-950/50"
             title="Play Voiceover Audio (/voiceover.mp3)"
           >
@@ -420,7 +446,10 @@ export const LoginPortal = ({ onSelectRole }) => {
               
               {/* BUTTON 1: LOGIN PORTAL */}
               <button
-                onClick={() => setCurrentView('LOGIN_ROLES')}
+                onClick={() => {
+                  playMainVoiceover();
+                  setCurrentView('LOGIN_ROLES');
+                }}
                 className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all btn-pop cursor-pointer group"
               >
                 <LogIn className="w-5 h-5 text-emerald-200 group-hover:scale-110 transition-transform" />
@@ -430,7 +459,10 @@ export const LoginPortal = ({ onSelectRole }) => {
 
               {/* BUTTON 2: HOW IT WORKS */}
               <button
-                onClick={() => setCurrentView('HOW_IT_WORKS_VIDEO')}
+                onClick={() => {
+                  playMainVoiceover();
+                  setCurrentView('HOW_IT_WORKS_VIDEO');
+                }}
                 className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-[#0B0F19]/80 hover:bg-[#0B0F19] text-white font-extrabold text-sm border border-cyan-400/80 hover:border-cyan-300 flex items-center justify-center gap-3 shadow-xl shadow-cyan-950/40 backdrop-blur-xl transition-all btn-pop cursor-pointer group"
               >
                 <PlayCircle className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
