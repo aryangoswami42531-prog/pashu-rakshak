@@ -4,7 +4,7 @@ import { FarmerAvatar3D, VetOfficerAvatar3D, GovtAdminAvatar3D } from './Avatars
 import { 
   ShieldCheck, Sparkles, Stethoscope, Building2, ChevronRight, 
   ArrowRight, UserCheck, Lock, Activity, PlayCircle, LogIn, ArrowLeft, X, Film, Maximize2, Minimize2,
-  Camera, CheckCircle2, AlertTriangle, RefreshCw, BadgeCheck, KeyRound, Fingerprint, Eye
+  Camera, CheckCircle2, AlertTriangle, RefreshCw, BadgeCheck, KeyRound, Fingerprint, Eye, Volume2
 } from 'lucide-react';
 
 export const LoginPortal = ({ onSelectRole }) => {
@@ -39,6 +39,7 @@ export const LoginPortal = ({ onSelectRole }) => {
   const audioRef = useRef(null);
   const vetAudioRef = useRef(null);
   const govtAudioRef = useRef(null);
+  const mainVoiceoverAudioRef = useRef(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -71,6 +72,15 @@ export const LoginPortal = ({ onSelectRole }) => {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       }
+    }
+  };
+
+  const playMainVoiceover = () => {
+    if (mainVoiceoverAudioRef.current) {
+      mainVoiceoverAudioRef.current.currentTime = 0;
+      mainVoiceoverAudioRef.current.play().catch(e => {
+        console.log("Voiceover audio play check:", e);
+      });
     }
   };
 
@@ -284,6 +294,13 @@ export const LoginPortal = ({ onSelectRole }) => {
   return (
     <div className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden">
       
+      {/* Audio element for Main Voiceover (/voiceover.mp3) */}
+      <audio
+        ref={mainVoiceoverAudioRef}
+        src="/voiceover.mp3"
+        preload="auto"
+      />
+
       {/* Audio element for Farmer Camera Verification Voiceover */}
       <audio
         ref={audioRef}
@@ -328,8 +345,19 @@ export const LoginPortal = ({ onSelectRole }) => {
           </h1>
         </div>
 
-        {/* Header Controls: Back Button, Fullscreen Toggle & Language Selector */}
+        {/* Header Controls: Voiceover Audio, Back Button, Fullscreen Toggle & Language Selector */}
         <div className="flex items-center gap-3">
+          
+          {/* Main Voiceover Audio Trigger Button */}
+          <button
+            onClick={playMainVoiceover}
+            className="p-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-emerald-400 border border-emerald-700/80 transition-all btn-pop cursor-pointer backdrop-blur-xl flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-emerald-950/50"
+            title="Play Voiceover Audio (/voiceover.mp3)"
+          >
+            <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
+            <span className="hidden sm:inline">{currentLang === 'HI' ? 'ऑडियो सुनें' : 'Listen Audio'}</span>
+          </button>
+
           {currentView !== 'HERO' && (
             <button
               onClick={() => setCurrentView('HERO')}

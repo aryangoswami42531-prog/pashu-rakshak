@@ -49,10 +49,8 @@ export function AppContent() {
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
   const [isBiosecurityAlertOpen, setIsBiosecurityAlertOpen] = useState(false);
 
-  // Session splash screen check (plays video + voiceover.mp3 on session startup)
-  const [showSplash, setShowSplash] = useState(() => {
-    return sessionStorage.getItem('hasSeenSplash') !== 'true';
-  });
+  // Session splash screen check (plays video + voiceover.mp3 on site load)
+  const [showSplash, setShowSplash] = useState(true);
 
   // Perfectly Calibrated 0.95s Animated Section Navigation Loader State
   const [isNavigating, setIsNavigating] = useState(false);
@@ -100,66 +98,50 @@ export function AppContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#030712] text-white relative">
-      {/* 0.95s Ultra-Premium Section Navigation Loading Screen */}
+    <div className="min-h-screen bg-[#030712] text-white flex flex-col justify-between selection:bg-emerald-500 selection:text-white relative">
+      {/* Top Header Navbar */}
+      <Navbar 
+        onLogout={handleLogout} 
+        onOpenSidebar={() => setIsSidebarOpen(true)} 
+        onOpenAlerts={() => setIsBiosecurityAlertOpen(true)}
+      />
+
+      {/* Main Workspace View */}
+      <MainContent 
+        activeTab={activeTab} 
+        setActiveTab={handleNavigateToTab} 
+        onOpenComplaint={() => setIsComplaintOpen(true)} 
+      />
+
+      {/* Slide-over Navigation Drawer */}
+      <SidebarDrawer 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        activeTab={activeTab} 
+        setActiveTab={handleNavigateToTab} 
+        onLogout={handleLogout} 
+        onOpenComplaint={() => setIsComplaintOpen(true)} 
+      />
+
+      {/* Global Toast Alert Notifications */}
+      <ToastContainer />
+
+      {/* Farmer Grievance Complaint Modal */}
+      <ComplaintModal 
+        isOpen={isComplaintOpen} 
+        onClose={() => setIsComplaintOpen(false)} 
+      />
+
+      {/* Regional Biosecurity Outbreak Emergency Alert Modal */}
+      <BiosecurityAlertModal 
+        isOpen={isBiosecurityAlertOpen} 
+        onClose={() => setIsBiosecurityAlertOpen(false)} 
+      />
+
+      {/* Smooth 0.95s Section Navigation Loading Overlay */}
       {isNavigating && (
         <SectionNavigationLoader targetTab={navigatingTab} />
       )}
-
-      {/* FLOATING FAR-LEFT EDGE HAMBURGER MENU BUTTON */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-48 left-0 z-[990] bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 to-teal-400 text-white py-3 px-3.5 rounded-r-2xl shadow-[0_0_25px_rgba(16,185,129,0.5)] border border-l-0 border-emerald-400/80 font-extrabold flex items-center gap-2 text-xs transition-all transform hover:translate-x-1.5 active:scale-95 group cursor-pointer"
-        title="Open Navigation Menu"
-      >
-        <Menu className="w-5 h-5 text-white group-hover:rotate-90 transition-transform duration-300" />
-        <span className="font-extrabold tracking-wider hidden sm:inline font-mono">MENU</span>
-      </button>
-
-      <div className="flex-1 flex flex-col">
-        <Navbar onLogout={handleLogout} />
-        <MainContent 
-          activeTab={activeTab} 
-          setActiveTab={handleNavigateToTab} 
-          onOpenComplaint={() => setIsComplaintOpen(true)}
-        />
-      </div>
-
-      {/* Slide-Out Far-Left Drawer */}
-      <SidebarDrawer
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        activeTab={activeTab}
-        setActiveTab={handleNavigateToTab}
-        onOpenComplaint={() => setIsComplaintOpen(true)}
-        onOpenBiosecurityAlert={() => setIsBiosecurityAlertOpen(true)}
-        onLogout={handleLogout}
-      />
-
-      {/* Farmer Grievance Complaint Modal */}
-      <ComplaintModal
-        isOpen={isComplaintOpen}
-        onClose={() => setIsComplaintOpen(false)}
-      />
-
-      {/* Biosecurity Alert AI Voice Doctor Modal */}
-      <BiosecurityAlertModal
-        isOpen={isBiosecurityAlertOpen}
-        onClose={() => setIsBiosecurityAlertOpen(false)}
-      />
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-[#0B0F19] py-6 px-4 text-center text-xs text-slate-400 space-y-2 mt-auto">
-        <div className="flex items-center justify-center gap-2 text-slate-200 font-semibold">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Pashu Rakshak — Production-Ready Biosecurity & Vet Dispatch Engine</span>
-        </div>
-        <p className="text-[11px] text-slate-500">
-          Official Digital Farm Management System • Government Biosecurity Compliance
-        </p>
-      </footer>
-
-      <ToastContainer />
     </div>
   );
 }

@@ -95,7 +95,7 @@ export const SplashScreen = ({ onFinish }) => {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
 
-  const [showLogo, setShowLogo] = useState(false);
+  const [showLogo, setShowLogo] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [videoCutReached, setVideoCutReached] = useState(false);
@@ -106,7 +106,6 @@ export const SplashScreen = ({ onFinish }) => {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
 
-    sessionStorage.setItem('hasSeenSplash', 'true');
     setFadeOut(true);
 
     setTimeout(() => {
@@ -115,17 +114,24 @@ export const SplashScreen = ({ onFinish }) => {
   };
 
   useEffect(() => {
-    // Session check: play once per session
-    const hasSeen = sessionStorage.getItem('hasSeenSplash');
-    if (hasSeen === 'true') {
-      onFinish();
-      return;
-    }
+    // Attempt to play voiceover.mp3 immediately on mount
+    const playVoiceover = async () => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        try {
+          await audioRef.current.play();
+          setAudioStarted(true);
+        } catch (err) {
+          console.log("Autoplay check - user interaction needed for audio:", err);
+        }
+      }
+    };
+    playVoiceover();
 
-    // Safety fallback timer: max 10s splash cap
+    // Safety fallback timer: max 8s splash cap
     const fallbackTimer = setTimeout(() => {
       finishSplash();
-    }, 10000);
+    }, 8000);
 
     return () => {
       clearTimeout(fallbackTimer);
@@ -139,7 +145,7 @@ export const SplashScreen = ({ onFinish }) => {
       setAudioStarted(true);
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => {
-        console.log("Browser autoplay blocked audio sound, playing visual splash:", err);
+        console.log("Browser autoplay blocked audio sound:", err);
       });
     }
   };
@@ -152,12 +158,12 @@ export const SplashScreen = ({ onFinish }) => {
         setShowLogo(true);
       }
 
-      if (currentTime >= 5.0 && !videoCutReached) {
+      if (currentTime >= 4.5 && !videoCutReached) {
         setVideoCutReached(true);
         videoRef.current.pause();
 
         if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-          console.log("Video cut at 5.0s, keeping splash active while voiceover audio finishes...");
+          console.log("Video cut at 4.5s, keeping splash active while voiceover audio finishes...");
         } else {
           finishSplash();
         }
@@ -171,7 +177,7 @@ export const SplashScreen = ({ onFinish }) => {
   };
 
   const handleVideoError = () => {
-    console.warn("Splash video could not be loaded/played. Executing fallback intro.");
+    console.warn("Splash video fallback triggered.");
     setVideoError(true);
     setShowLogo(true);
 
@@ -183,7 +189,8 @@ export const SplashScreen = ({ onFinish }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center overflow-hidden transition-opacity duration-700 ${
+      onClick={finishSplash}
+      className={`fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center overflow-hidden transition-opacity duration-700 cursor-pointer ${
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
