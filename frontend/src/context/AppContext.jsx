@@ -95,7 +95,7 @@ export const AppProvider = ({ children }) => {
   // Fetch backend state seamlessly without triggering UI loading flicker
   const refreshAllData = async (isInitial = false) => {
     try {
-      if (isInitial) {
+      if (isInitial && requestsList.length === 0) {
         setIsLoading(true);
       }
 
@@ -108,19 +108,29 @@ export const AppProvider = ({ children }) => {
         fetch('/api/complaints').then(r => r.json()).catch(() => null)
       ]);
 
-      if (vetsRes?.vets) {
-        setVetsList(vetsRes.vets);
+      if (vetsRes?.vets && Array.isArray(vetsRes.vets)) {
+        setVetsList(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(vetsRes.vets)) {
+            return vetsRes.vets;
+          }
+          return prev;
+        });
       }
 
       if (reqsRes?.requests && Array.isArray(reqsRes.requests)) {
         setRequestsList(prev => {
-          // Merge incoming requests with existing local requests to avoid dropping user created cases
           const mergedMap = new Map();
           // First add existing local requests
           prev.forEach(item => mergedMap.set(item.id, item));
           // Overlay backend requests
           reqsRes.requests.forEach(item => mergedMap.set(item.id, item));
-          return Array.from(mergedMap.values());
+          const nextArr = Array.from(mergedMap.values());
+          
+          // Strict Reference Stability Check: Only trigger React update if content actually changed!
+          if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
+            return nextArr;
+          }
+          return prev; // Return exact same array reference if unchanged -> STOP UI FLICKER!
         });
       }
 
@@ -129,16 +139,30 @@ export const AppProvider = ({ children }) => {
           const mergedMap = new Map();
           prev.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
           animsRes.animals.forEach(item => mergedMap.set(item.id || item.tagNumber, item));
-          return Array.from(mergedMap.values());
+          const nextArr = Array.from(mergedMap.values());
+          if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
+            return nextArr;
+          }
+          return prev;
         });
       }
 
       if (outbRes) {
-        setOutbreaksSummary(outbRes);
+        setOutbreaksSummary(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(outbRes)) {
+            return outbRes;
+          }
+          return prev;
+        });
       }
 
-      if (alertsRes?.alerts) {
-        setAlertsList(alertsRes.alerts);
+      if (alertsRes?.alerts && Array.isArray(alertsRes.alerts)) {
+        setAlertsList(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(alertsRes.alerts)) {
+            return alertsRes.alerts;
+          }
+          return prev;
+        });
       }
 
       if (cmplRes?.complaints && Array.isArray(cmplRes.complaints)) {
@@ -146,7 +170,11 @@ export const AppProvider = ({ children }) => {
           const mergedMap = new Map();
           prev.forEach(item => mergedMap.set(item.id, item));
           cmplRes.complaints.forEach(item => mergedMap.set(item.id, item));
-          return Array.from(mergedMap.values());
+          const nextArr = Array.from(mergedMap.values());
+          if (JSON.stringify(prev) !== JSON.stringify(nextArr)) {
+            return nextArr;
+          }
+          return prev;
         });
       }
 
@@ -161,10 +189,10 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     refreshAllData(true);
-    // Real-time background sync interval (silent without toggling isLoading)
+    // Real-time background sync interval (silent without toggling isLoading or changing unchanged array references)
     const interval = setInterval(() => {
       refreshAllData(false);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
