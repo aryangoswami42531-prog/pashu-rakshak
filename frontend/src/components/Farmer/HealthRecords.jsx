@@ -59,8 +59,8 @@ export const HealthRecords = () => {
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-start gap-3 shadow-md">
         <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold text-white">Automated Health Card Workflow: </span>
-          When a farmer dispatches an emergency request after AI scanning, an entry with <strong>`WAITING FOR DOCTOR VISIT`</strong> is created in real time. Once the Doctor completes the visit, the card transforms into a <strong>Verified SHA-256 Passport</strong>!
+          <span className="font-bold text-white">Automated Health Card & Red Spot Workflow: </span>
+          When a farmer dispatches a case, the Digital Passport displays <strong>`WAITING FOR VET INSPECTION & VERIFICATION`</strong> and a <strong>Red Spot</strong> appears on the Govt GIS Map. Once the Vet Officer completes & logs field inspection, the card turns into a <strong>Verified SHA-256 Passport</strong> and the Red Spot auto-clears from the map!
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export const HealthRecords = () => {
 
           return (
             <div
-              key={animal.id}
+              key={animal.id || animal.tagNumber}
               className={`glass-panel p-5 rounded-2xl border transition-all space-y-4 flex flex-col justify-between shadow-xl ${
                 hasVaccines
                   ? 'border-emerald-500/50 bg-slate-900/90'
@@ -104,7 +104,7 @@ export const HealthRecords = () => {
                   ) : (
                     <span className="bg-amber-950/90 text-amber-300 border border-amber-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1.5 animate-pulse shadow-md">
                       <Clock className="w-3 h-3 text-amber-400" />
-                      <span>WAITING FOR DOCTOR VISIT</span>
+                      <span>WAITING FOR VET INSPECTION & VERIFICATION</span>
                     </span>
                   )}
                 </div>
@@ -200,10 +200,10 @@ export const HealthRecords = () => {
                 selectedAnimal.medicalHistory.map((med, idx) => (
                   <div key={idx} className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
                     <div className="flex items-center justify-between font-bold text-emerald-400">
-                      <span>{med.condition}</span>
+                      <span>{med.condition || med.diagnosis}</span>
                       <span className="text-[10px] text-slate-400 font-mono">{med.date}</span>
                     </div>
-                    <div className="text-slate-300 leading-relaxed">{med.treatment}</div>
+                    <div className="text-slate-300 leading-relaxed">{med.treatment || med.prescriptions?.join(', ')}</div>
                     <div className="text-[10px] text-slate-500 font-semibold">Attending Officer: {med.vetName}</div>
                   </div>
                 ))
