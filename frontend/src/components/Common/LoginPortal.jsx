@@ -49,22 +49,41 @@ export const LoginPortal = ({ onSelectRole }) => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Unlock browser audio context on first click for Vercel Live Deployment
-  useEffect(() => {
-    const handleFirstClick = () => {
-      if (mainVoiceoverAudioRef.current && mainVoiceoverAudioRef.current.paused) {
-        mainVoiceoverAudioRef.current.currentTime = 0;
-        mainVoiceoverAudioRef.current.play().catch(err => {
-          console.log("Vercel Live user gesture audio unlock:", err);
+  const playMainVoiceover = () => {
+    if (mainVoiceoverAudioRef.current) {
+      const playPromise = mainVoiceoverAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.log("Voiceover autoplay check:", e);
         });
       }
+    }
+  };
+
+  // Attempt instant default play on mount
+  useEffect(() => {
+    playMainVoiceover();
+
+    const intervalId = setInterval(() => {
+      if (mainVoiceoverAudioRef.current && mainVoiceoverAudioRef.current.paused) {
+        playMainVoiceover();
+      } else if (mainVoiceoverAudioRef.current && !mainVoiceoverAudioRef.current.paused) {
+        clearInterval(intervalId);
+      }
+    }, 150);
+
+    const handleFirstClick = () => {
+      playMainVoiceover();
     };
 
     window.addEventListener('click', handleFirstClick, { once: true });
+    window.addEventListener('pointerdown', handleFirstClick, { once: true });
     window.addEventListener('touchstart', handleFirstClick, { once: true });
 
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('click', handleFirstClick);
+      window.removeEventListener('pointerdown', handleFirstClick);
       window.removeEventListener('touchstart', handleFirstClick);
     };
   }, []);
@@ -92,15 +111,6 @@ export const LoginPortal = ({ onSelectRole }) => {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       }
-    }
-  };
-
-  const playMainVoiceover = () => {
-    if (mainVoiceoverAudioRef.current) {
-      mainVoiceoverAudioRef.current.currentTime = 0;
-      mainVoiceoverAudioRef.current.play().catch(e => {
-        console.log("Voiceover audio play check:", e);
-      });
     }
   };
 
@@ -317,10 +327,11 @@ export const LoginPortal = ({ onSelectRole }) => {
       className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden"
     >
       
-      {/* Audio element for Main Voiceover (/voiceover.mp3) */}
+      {/* Audio element for Main Voiceover (/voiceover.mp3) with autoPlay */}
       <audio
         ref={mainVoiceoverAudioRef}
         src="/voiceover.mp3"
+        autoPlay
         preload="auto"
       />
 

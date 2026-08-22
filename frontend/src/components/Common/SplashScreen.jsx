@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2 } from 'lucide-react';
 
 // ULTRA-PREMIUM CARTOON INDIAN FARMER WAVING HELLO (HI 👋) LOGO (NO CIRCLE BACKDROP)
 const WavingFarmerLogo = () => (
@@ -116,24 +115,37 @@ export const SplashScreen = ({ onFinish }) => {
 
   const triggerAudioPlay = () => {
     if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().then(() => {
-        setAudioStarted(true);
-      }).catch(err => {
-        console.log("Audio unlock check:", err);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setAudioStarted(true);
+        }).catch(err => {
+          console.log("Default autoplay check:", err);
+        });
+      }
     }
   };
 
   useEffect(() => {
+    // FORCE PLAY IMMEDIATELY BY DEFAULT ON MOUNT
     triggerAudioPlay();
 
-    // Unlock browser audio context on any user tap/click on Vercel live site
+    // Fast retry loop to ensure playback starts instantly
+    const intervalId = setInterval(() => {
+      if (audioRef.current && audioRef.current.paused) {
+        triggerAudioPlay();
+      } else if (audioRef.current && !audioRef.current.paused) {
+        clearInterval(intervalId);
+      }
+    }, 100);
+
+    // Global listener backup in case browser blocks early promise
     const handleUserUnlock = () => {
       triggerAudioPlay();
     };
 
     window.addEventListener('click', handleUserUnlock, { once: true });
+    window.addEventListener('pointerdown', handleUserUnlock, { once: true });
     window.addEventListener('touchstart', handleUserUnlock, { once: true });
 
     // Safety fallback timer: max 8s splash cap
@@ -142,7 +154,9 @@ export const SplashScreen = ({ onFinish }) => {
     }, 8000);
 
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('click', handleUserUnlock);
+      window.removeEventListener('pointerdown', handleUserUnlock);
       window.removeEventListener('touchstart', handleUserUnlock);
       clearTimeout(fallbackTimer);
     };
@@ -196,10 +210,11 @@ export const SplashScreen = ({ onFinish }) => {
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Voiceover Audio Element (public/voiceover.mp3) */}
+      {/* Voiceover Audio Element (public/voiceover.mp3) with autoPlay */}
       <audio
         ref={audioRef}
         src="/voiceover.mp3"
+        autoPlay
         preload="auto"
         onEnded={handleAudioEnded}
       />
@@ -240,12 +255,11 @@ export const SplashScreen = ({ onFinish }) => {
           </p>
         </div>
 
-        {/* Interactive Audio Tap Prompt for Vercel Live Deployment */}
-        <div className="pt-2">
-          <div className="inline-flex items-center gap-2 bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 text-xs font-bold px-4 py-2 rounded-full shadow-lg animate-pulse">
-            <Volume2 className="w-4 h-4 text-emerald-400" />
-            <span>CLICK ANYWHERE TO ENTER WITH AUDIO 🔊</span>
-          </div>
+        {/* Subtle Indicator Dots */}
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" style={{ animationDelay: '0.2s' }} />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" style={{ animationDelay: '0.4s' }} />
         </div>
       </div>
     </div>
