@@ -1,0 +1,25 @@
+{
+  "name": "pashu-rakshak-biosecurity",
+  "version": "1.0.0",
+  "description": "Digital Farm Management for Biosecurity Measures - Early Disease Detection, Vet Connect & Govt Outbreak Analytics",
+  "scripts": {
+    "setup": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start": "node backend/server.js",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "biosecurity",
+    "livestock",
+    "ai-disease-detection",
+    "vet-connect",
+    "health-records",
+    "outbreak-surveillance"
+  ],
+  "author": "Pashu Rakshak Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
