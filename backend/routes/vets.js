@@ -214,18 +214,18 @@ router.post('/request', (req, res) => {
       ageMonths: 36,
       gender: "FEMALE",
       healthPassportHash: generateHash({ tag: animalTag, disease: suspectedDisease, date: nowStr }),
-      status: "UNDER_SURVEILLANCE",
-      vaccinations: [
-        { name: "FMD Vaccine (Stage 1)", date: "2024-01-15", verifiedBy: "Govt Vet Dept" }
-      ],
+      status: "INFECTED",
+      suspectedDisease: suspectedDisease,
+      assignedVetName: assignedVet.name,
+      vaccinations: [],
       medicalHistory: [
         {
           date: nowStr,
-          diagnosis: suspectedDisease,
+          diagnosis: `🔴 INFECTED — Suspected ${suspectedDisease}`,
           vetId: assignedVet.id,
           vetName: assignedVet.name,
           prescriptions: ["Isolate animal in quarantine shed", "Administer Antipyretic & Antihistamine", "Apply Antiseptic Spray"],
-          remarks: `Emergency Dispatch Request initiated. Status: PENDING VET VISIT (${assignedVet.name})`
+          remarks: `Emergency Dispatch Request initiated by Farmer. Status: INFECTED — AWAITING VET VISIT (${assignedVet.name})`
         }
       ]
     };

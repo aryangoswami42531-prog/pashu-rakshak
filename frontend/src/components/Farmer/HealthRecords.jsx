@@ -96,15 +96,15 @@ export const HealthRecords = () => {
                     </div>
                   </div>
 
-                  {hasVaccines ? (
+                  {hasVaccines || animal.status === 'VACCINATED' ? (
                     <span className="bg-emerald-950 text-emerald-300 border border-emerald-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1 shadow-sm">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <span>VERIFIED PASSPORT</span>
+                      <span>💉 VACCINATED & VERIFIED PASSPORT</span>
                     </span>
                   ) : (
-                    <span className="bg-amber-950/90 text-amber-300 border border-amber-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1.5 animate-pulse shadow-md">
-                      <Clock className="w-3 h-3 text-amber-400" />
-                      <span>WAITING FOR VET INSPECTION & VERIFICATION</span>
+                    <span className="bg-red-950/90 text-red-300 border border-red-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1.5 animate-pulse shadow-md">
+                      <AlertOctagon className="w-3 h-3 text-red-400" />
+                      <span>🔴 INFECTED — AWAITING VET VISIT</span>
                     </span>
                   )}
                 </div>

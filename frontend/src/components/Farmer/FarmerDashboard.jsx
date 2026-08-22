@@ -83,6 +83,28 @@ export const FarmerDashboard = ({ activeTab = 'SCANNER', setActiveTab, onOpenCom
     const farmerGpsLocation = locationData.location || { lat: 30.8920, lng: 75.8450 };
     const farmerVillageName = locationData.village || "Farmer Live Location";
 
+    // Automatically create animal health record in persistent store awaiting vet visit
+    const nowStr = new Date().toISOString().split('T')[0];
+    const newAnimal = {
+      id: "anim-" + Date.now(),
+      farmId: "farm-1",
+      tagNumber: uniqueAnimalTag,
+      species: prefilledAiResult?.diseaseMatch?.affectedSpecies?.[0] || "Cattle",
+      breed: "Local Breed",
+      ageMonths: 36,
+      gender: "FEMALE",
+      status: "INFECTED",
+      vaccinations: [],
+      medicalHistory: [
+        {
+          date: nowStr,
+          diagnosis: `🔴 INFECTED — Suspected ${prefilledAiResult?.diseaseMatch?.name || "Disease"}`,
+          prescriptions: ["Quarantine Shed Isolation", "Antipyretic & Antihistamine"],
+          remarks: `Emergency Dispatch Request initiated by Farmer. Status: INFECTED — AWAITING VET VISIT`
+        }
+      ]
+    };
+
     try {
       const res = await fetch('/api/vets/request', {
         method: 'POST',

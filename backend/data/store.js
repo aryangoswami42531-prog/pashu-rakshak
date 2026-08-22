@@ -89,17 +89,50 @@ module.exports = {
       req.inspectionLog = inspectionLog;
     }
 
-    // Update animal status
-    const anim = cache.animalsList.find(a => a.tagNumber === animalTag || a.id === animalTag);
+    // Find matching animal or create entry if missing
+    let anim = cache.animalsList.find(a => a.tagNumber === animalTag || a.id === animalTag);
+    if (!anim && req) {
+      anim = {
+        id: "anim-" + Date.now(),
+        farmId: "farm-1",
+        tagNumber: req.animalTag || animalTag,
+        species: req.species || "Cattle",
+        breed: "Farm Livestock",
+        ageMonths: 36,
+        gender: "FEMALE",
+        status: "VACCINATED",
+        vaccinations: [],
+        medicalHistory: []
+      };
+      cache.animalsList.unshift(anim);
+    }
+
     if (anim) {
-      anim.status = "VERIFIED_PASSPORT";
+      anim.status = "VACCINATED";
+      if (!anim.vaccinations) anim.vaccinations = [];
+
+      const vacHash = generateHash({
+        tag: animalTag,
+        vaccine: inspectionLog.vaccineGiven || "FMD Dual Antigen",
+        date: Date.now()
+      });
+
+      anim.vaccinations.unshift({
+        vaccineName: inspectionLog.vaccineGiven || "FMD Dual Antigen",
+        batchNumber: inspectionLog.batchNumber || "VAC-2026-8801",
+        administeredDate: new Date().toISOString().split('T')[0],
+        nextDueDate: inspectionLog.followUpDate || "2027-02-20",
+        administeredBy: inspectionLog.vetName || "Dr. Rajesh Sharma",
+        recordHash: vacHash
+      });
+
       if (!anim.medicalHistory) anim.medicalHistory = [];
       anim.medicalHistory.unshift({
         date: new Date().toISOString().split('T')[0],
-        diagnosis: inspectionLog.diagnosis || "Clinical Field Inspection Complete",
+        diagnosis: `💉 VACCINATED & VERIFIED — ${inspectionLog.diagnosis || "Clinical Field Inspection Complete"}`,
         vetName: inspectionLog.vetName || "Dr. Rajesh Sharma",
-        prescriptions: [inspectionLog.treatmentAdministered || "Standard Biosecurity Vaccine"],
-        remarks: "Field Inspection & Clinical Diagnosis Completed. Case Resolved."
+        prescriptions: [inspectionLog.treatmentAdministered || "Standard Biosecurity Vaccine Barrier"],
+        remarks: "Field Inspection & Vaccine Administration Completed by Doctor. Case Resolved & Animal Vaccinated."
       });
     }
 
