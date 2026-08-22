@@ -4,7 +4,7 @@ import { FarmerAvatar3D, VetOfficerAvatar3D, GovtAdminAvatar3D } from './Avatars
 import { 
   ShieldCheck, Sparkles, Stethoscope, Building2, ChevronRight, 
   ArrowRight, UserCheck, Lock, Activity, PlayCircle, LogIn, ArrowLeft, X, Film, Maximize2, Minimize2,
-  Camera, CheckCircle2, AlertTriangle, RefreshCw, BadgeCheck, KeyRound, Fingerprint, Eye, Volume2
+  Camera, CheckCircle2, AlertTriangle, RefreshCw, BadgeCheck, KeyRound, Fingerprint, Eye
 } from 'lucide-react';
 
 export const LoginPortal = ({ onSelectRole }) => {
@@ -39,7 +39,6 @@ export const LoginPortal = ({ onSelectRole }) => {
   const audioRef = useRef(null);
   const vetAudioRef = useRef(null);
   const govtAudioRef = useRef(null);
-  const mainVoiceoverAudioRef = useRef(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -47,45 +46,6 @@ export const LoginPortal = ({ onSelectRole }) => {
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const playMainVoiceover = () => {
-    if (mainVoiceoverAudioRef.current) {
-      const playPromise = mainVoiceoverAudioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(e => {
-          console.log("Voiceover autoplay check:", e);
-        });
-      }
-    }
-  };
-
-  // Attempt instant default play on mount
-  useEffect(() => {
-    playMainVoiceover();
-
-    const intervalId = setInterval(() => {
-      if (mainVoiceoverAudioRef.current && mainVoiceoverAudioRef.current.paused) {
-        playMainVoiceover();
-      } else if (mainVoiceoverAudioRef.current && !mainVoiceoverAudioRef.current.paused) {
-        clearInterval(intervalId);
-      }
-    }, 150);
-
-    const handleFirstClick = () => {
-      playMainVoiceover();
-    };
-
-    window.addEventListener('click', handleFirstClick, { once: true });
-    window.addEventListener('pointerdown', handleFirstClick, { once: true });
-    window.addEventListener('touchstart', handleFirstClick, { once: true });
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('click', handleFirstClick);
-      window.removeEventListener('pointerdown', handleFirstClick);
-      window.removeEventListener('touchstart', handleFirstClick);
-    };
   }, []);
 
   // Connect videoRef stream whenever farmer camera modal opens
@@ -322,19 +282,8 @@ export const LoginPortal = ({ onSelectRole }) => {
   };
 
   return (
-    <div 
-      onClick={playMainVoiceover}
-      className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden"
-    >
+    <div className="min-h-screen bg-[#030712] text-white flex flex-col justify-between relative selection:bg-emerald-500 selection:text-white overflow-hidden">
       
-      {/* Audio element for Main Voiceover (/voiceover.mp3) with autoPlay */}
-      <audio
-        ref={mainVoiceoverAudioRef}
-        src="/voiceover.mp3"
-        autoPlay
-        preload="auto"
-      />
-
       {/* Audio element for Farmer Camera Verification Voiceover */}
       <audio
         ref={audioRef}
@@ -379,22 +328,9 @@ export const LoginPortal = ({ onSelectRole }) => {
           </h1>
         </div>
 
-        {/* Header Controls: Voiceover Audio, Back Button, Fullscreen Toggle & Language Selector */}
+        {/* Header Controls: Back Button, Fullscreen Toggle & Language Selector */}
         <div className="flex items-center gap-3">
           
-          {/* Main Voiceover Audio Trigger Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              playMainVoiceover();
-            }}
-            className="p-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-emerald-400 border border-emerald-700/80 transition-all btn-pop cursor-pointer backdrop-blur-xl flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-emerald-950/50"
-            title="Play Voiceover Audio (/voiceover.mp3)"
-          >
-            <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
-            <span className="hidden sm:inline">{currentLang === 'HI' ? 'ऑडियो सुनें' : 'Listen Audio'}</span>
-          </button>
-
           {currentView !== 'HERO' && (
             <button
               onClick={() => setCurrentView('HERO')}
@@ -457,10 +393,7 @@ export const LoginPortal = ({ onSelectRole }) => {
               
               {/* BUTTON 1: LOGIN PORTAL */}
               <button
-                onClick={() => {
-                  playMainVoiceover();
-                  setCurrentView('LOGIN_ROLES');
-                }}
+                onClick={() => setCurrentView('LOGIN_ROLES')}
                 className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all btn-pop cursor-pointer group"
               >
                 <LogIn className="w-5 h-5 text-emerald-200 group-hover:scale-110 transition-transform" />
@@ -470,10 +403,7 @@ export const LoginPortal = ({ onSelectRole }) => {
 
               {/* BUTTON 2: HOW IT WORKS */}
               <button
-                onClick={() => {
-                  playMainVoiceover();
-                  setCurrentView('HOW_IT_WORKS_VIDEO');
-                }}
+                onClick={() => setCurrentView('HOW_IT_WORKS_VIDEO')}
                 className="w-full sm:w-auto py-4 px-8 rounded-2xl bg-[#0B0F19]/80 hover:bg-[#0B0F19] text-white font-extrabold text-sm border border-cyan-400/80 hover:border-cyan-300 flex items-center justify-center gap-3 shadow-xl shadow-cyan-950/40 backdrop-blur-xl transition-all btn-pop cursor-pointer group"
               >
                 <PlayCircle className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />

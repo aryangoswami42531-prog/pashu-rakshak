@@ -106,6 +106,10 @@ export const SplashScreen = ({ onFinish }) => {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
 
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
     setFadeOut(true);
 
     setTimeout(() => {
@@ -120,17 +124,17 @@ export const SplashScreen = ({ onFinish }) => {
         playPromise.then(() => {
           setAudioStarted(true);
         }).catch(err => {
-          console.log("Default autoplay check:", err);
+          console.log("Splash audio autoplay check:", err);
         });
       }
     }
   };
 
   useEffect(() => {
-    // FORCE PLAY IMMEDIATELY BY DEFAULT ON MOUNT
+    // FORCE PLAY voiceover.mp3 IMMEDIATELY BY DEFAULT ON SPLASH SCREEN LOAD
     triggerAudioPlay();
 
-    // Fast retry loop to ensure playback starts instantly
+    // Fast retry loop to ensure splash voiceover plays instantly
     const intervalId = setInterval(() => {
       if (audioRef.current && audioRef.current.paused) {
         triggerAudioPlay();
@@ -139,7 +143,7 @@ export const SplashScreen = ({ onFinish }) => {
       }
     }, 100);
 
-    // Global listener backup in case browser blocks early promise
+    // Global listener backup in case browser requires touch/gesture
     const handleUserUnlock = () => {
       triggerAudioPlay();
     };
@@ -210,7 +214,7 @@ export const SplashScreen = ({ onFinish }) => {
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Voiceover Audio Element (public/voiceover.mp3) with autoPlay */}
+      {/* Voiceover Audio Element (public/voiceover.mp3) - Plays ONLY during Splash Screen before login */}
       <audio
         ref={audioRef}
         src="/voiceover.mp3"
