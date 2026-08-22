@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Volume2 } from 'lucide-react';
 
 // ULTRA-PREMIUM CARTOON INDIAN FARMER WAVING HELLO (HI 👋) LOGO (NO CIRCLE BACKDROP)
 const WavingFarmerLogo = () => (
@@ -99,16 +100,12 @@ export const SplashScreen = ({ onFinish }) => {
   const [fadeOut, setFadeOut] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [videoCutReached, setVideoCutReached] = useState(false);
-  const [audioStarted, setAudioStarted] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const isFinishedRef = useRef(false);
 
   const finishSplash = () => {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
 
     setFadeOut(true);
 
@@ -119,43 +116,47 @@ export const SplashScreen = ({ onFinish }) => {
 
   const triggerAudioPlay = () => {
     if (audioRef.current) {
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1.0;
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          setAudioStarted(true);
+          setAudioPlaying(true);
         }).catch(err => {
           console.log("Splash audio autoplay check:", err);
+          setAudioPlaying(false);
         });
       }
     }
   };
 
   useEffect(() => {
-    // FORCE PLAY voiceover.mp3 IMMEDIATELY BY DEFAULT ON SPLASH SCREEN LOAD
+    // Attempt play immediately on component mount
     triggerAudioPlay();
 
-    // Fast retry loop to ensure splash voiceover plays instantly
+    // Retry loop until audio starts playing
     const intervalId = setInterval(() => {
       if (audioRef.current && audioRef.current.paused) {
         triggerAudioPlay();
       } else if (audioRef.current && !audioRef.current.paused) {
+        setAudioPlaying(true);
         clearInterval(intervalId);
       }
-    }, 100);
+    }, 150);
 
-    // Global listener backup in case browser requires touch/gesture
+    // Global listener backup for browser gesture unlocking
     const handleUserUnlock = () => {
       triggerAudioPlay();
     };
 
-    window.addEventListener('click', handleUserUnlock, { once: true });
-    window.addEventListener('pointerdown', handleUserUnlock, { once: true });
-    window.addEventListener('touchstart', handleUserUnlock, { once: true });
+    window.addEventListener('click', handleUserUnlock);
+    window.addEventListener('pointerdown', handleUserUnlock);
+    window.addEventListener('touchstart', handleUserUnlock);
 
-    // Safety fallback timer: max 8s splash cap
+    // Safety fallback timer: max 12s splash cap to allow full voiceover duration
     const fallbackTimer = setTimeout(() => {
       finishSplash();
-    }, 8000);
+    }, 12000);
 
     return () => {
       clearInterval(intervalId);
@@ -179,14 +180,22 @@ export const SplashScreen = ({ onFinish }) => {
         setShowLogo(true);
       }
 
+      // Freeze video at 4.5s clip cut, but DO NOT close splash until voiceover audio completes!
       if (currentTime >= 4.5 && !videoCutReached) {
         setVideoCutReached(true);
         videoRef.current.pause();
 
-        if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-          console.log("Video cut at 4.5s, keeping splash active while voiceover audio finishes...");
-        } else {
-          finishSplash();
+        // If audio has ended or failed to start, finish splash
+        if (audioRef.current && (audioRef.current.ended || audioRef.current.paused)) {
+          // If audio is playing, wait for handleAudioEnded
+          if (!audioRef.current.paused && !audioRef.current.ended) {
+            console.log("Video cut at 4.5s, keeping splash active while voiceover audio finishes...");
+          } else {
+            // Give brief 1s pause if audio couldn't play
+            setTimeout(() => {
+              finishSplash();
+            }, 1000);
+          }
         }
       }
     }
@@ -208,13 +217,12 @@ export const SplashScreen = ({ onFinish }) => {
     <div
       onClick={() => {
         triggerAudioPlay();
-        finishSplash();
       }}
       className={`fixed inset-0 z-[9999] bg-[#030712] flex items-center justify-center overflow-hidden transition-opacity duration-700 cursor-pointer ${
         fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Voiceover Audio Element (public/voiceover.mp3) - Plays ONLY during Splash Screen before login */}
+      {/* Voiceover Audio Element (public/voiceover.mp3) */}
       <audio
         ref={audioRef}
         src="/voiceover.mp3"
@@ -258,6 +266,22 @@ export const SplashScreen = ({ onFinish }) => {
             National Livestock Biosecurity Platform
           </p>
         </div>
+
+        {/* If audio was blocked by browser autoplay policy, show subtle Play Sound button */}
+        {!audioPlaying && (
+          <div className="pt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerAudioPlay();
+              }}
+              className="inline-flex items-center gap-2 bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/80 text-emerald-300 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-all btn-pop cursor-pointer animate-pulse"
+            >
+              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <span>आवाज प्ले करें (Play Audio)</span>
+            </button>
+          </div>
+        )}
 
         {/* Subtle Indicator Dots */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
