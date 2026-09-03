@@ -5,7 +5,7 @@
 
 ---
 
-## 📌 Problem Statement
+##  Problem Statement
 
 Livestock farming supports over 20.5 million livelihoods in rural India, contributing significantly to agricultural GDP. However, smallholder farmers face severe challenges due to delayed disease identification, limited access to qualified Veterinary Officers in remote villages, and unchecked contagion spread (such as Lumpy Skin Disease and Foot & Mouth Disease). 
 
@@ -15,18 +15,18 @@ Traditional reporting relies on manual record-keeping and delayed official notif
 
 ## ✨ Key Features
 
-- **🐄 Animal-Specific AI Disease Detection:** Multi-species diagnostic engine tailored for Cattle, Buffalo, Swine, and Poultry with two-stage symptom risk analysis.
-- **⚡ Offline-First Architecture:** Local caching and instant offline assessment allowing farmers to diagnose symptoms even in zero-connectivity rural zones.
-- **🩺 Automated Vet Connect:** Proximity-based Veterinary Officer locator using Haversine GPS distance calculation, instant emergency request dispatching, and call routing.
-- **📜 Digital Health Passports:** Immutable animal health cards tracking vaccination history, diagnostic logs, and verified veterinary visit records.
-- **🔴 Dynamic GIS Outbreak Heatmap:** Real-time containment radius visualization on government dashboards that automatically projects active un-inspected cases as **Red Spots** and auto-clears them once a Vet Officer logs field inspection & diagnosis.
-- **📡 Emergency Geo-Alert Broadcast:** Command center tool enabling government administrators to issue regional quarantine alerts and boundary restrictions to registered farmers.
-- **🌐 Multilingual & Voice Support:** Full English and Hindi interface with audio narration for accessible, low-literacy farmer onboarding.
-- **🏛️ Govt Admin Audit & Duty Scorecard:** Performance metrics, response time tracking, and grievance resolution dashboard for state veterinary departments.
+- ** Animal-Specific AI Disease Detection:** Multi-species diagnostic engine tailored for Cattle, Buffalo, Swine, and Poultry with two-stage symptom risk analysis.
+- **Offline-First Architecture:** Local caching and instant offline assessment allowing farmers to diagnose symptoms even in zero-connectivity rural zones.
+- ** Automated Vet Connect:** Proximity-based Veterinary Officer locator using Haversine GPS distance calculation, instant emergency request dispatching, and call routing.
+- ** Digital Health Passports:** Immutable animal health cards tracking vaccination history, diagnostic logs, and verified veterinary visit records.
+- ** Dynamic GIS Outbreak Heatmap:** Real-time containment radius visualization on government dashboards that automatically projects active un-inspected cases as **Red Spots** and auto-clears them once a Vet Officer logs field inspection & diagnosis.
+- ** Emergency Geo-Alert Broadcast:** Command center tool enabling government administrators to issue regional quarantine alerts and boundary restrictions to registered farmers.
+- ** Multilingual & Voice Support:** Full English and Hindi interface with audio narration for accessible, low-literacy farmer onboarding.
+- ** Govt Admin Audit & Duty Scorecard:** Performance metrics, response time tracking, and grievance resolution dashboard for state veterinary departments.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Domain | Technologies & Libraries Used |
 | :--- | :--- |
@@ -38,7 +38,7 @@ Traditional reporting relies on manual record-keeping and delayed official notif
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 The following Mermaid diagram outlines the end-to-end data flow across Farmer, Vet Officer, and Government Admin workflows:
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ---
 
-## 🖼️ Screenshots
+##  Screenshots
 
 > *Screenshots demonstrating the core user flows of Pashu Rakshak:*
 
@@ -86,7 +86,7 @@ flowchart TD
 
 ---
 
-## ⚙️ How It Works
+##  How It Works
 
 1. **Two-Stage AI Diagnostic Flow:**
    - **Stage 1 (Species & Visual Check):** The farmer selects the affected animal type (Cattle, Swine, Poultry) and performs face/symptom verification.
@@ -99,7 +99,7 @@ flowchart TD
 
 ---
 
-## 🚀 Installation & Setup
+##  Installation & Setup
 
 Follow these steps to set up and run **Pashu Rakshak** locally:
 
@@ -155,27 +155,27 @@ Open your browser and navigate to **`http://localhost:5173`**.
 
 ---
 
-## 🔗 Live Links
+##  Live Links
 
 - **Deployed Platform URL:** `https://pashu-rakshak.vercel.app` *(Placeholder)*
 - **Demo Video Walkthrough:** `https://youtube.com/watch?v=demo-placeholder` *(Placeholder)*
 
 ---
 
-## 👨‍💻 Team & Contributors
+##  Team & Contributors
 
 - **Aryan Goswami** — *Lead Developer & Architect*
 - **Pashu Rakshak Team** — *Biosecurity Research & UI/UX Design*
 
 ---
 
-## 📄 License
+##  License
 
 This project is open-source and available under the [MIT License](LICENSE).
 
 ---
 
-## 🙏 Acknowledgements
+##  Acknowledgements
 
 - Built for **Prasunethon 2.0 Hackathon 2026**
 - Special thanks to open-source communities behind React, Leaflet, OpenStreetMap, TailwindCSS, and Express.js.
