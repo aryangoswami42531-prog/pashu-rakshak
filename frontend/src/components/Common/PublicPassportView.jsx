@@ -35,6 +35,21 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
     const fetchAnimalRecord = async () => {
       setLoading(true);
       setError(null);
+
+      // Priority 1: Check LocalStorage for real-time live status (synchronizes instant Vet verification)
+      try {
+        const cached = localStorage.getItem('pr_animalsList');
+        if (cached) {
+          const list = JSON.parse(cached);
+          const found = list.find(a => a.tagNumber === currentTag || a.id === currentTag);
+          if (found) {
+            setAnimal(found);
+            setLoading(false);
+          }
+        }
+      } catch(e) {}
+
+      // Priority 2: Fetch fresh backend state
       try {
         const res = await fetch(`/api/records/${encodeURIComponent(currentTag)}`, {
           cache: 'no-store',
@@ -42,83 +57,18 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
         });
         const data = await res.json();
         if (data.success && data.animal) {
-          setAnimal(data.animal);
-        } else {
-          try {
-            const cached = localStorage.getItem('pr_animalsList');
-            if (cached) {
-              const list = JSON.parse(cached);
-              const found = list.find(a => a.tagNumber === currentTag || a.id === currentTag);
-              if (found) {
-                setAnimal(found);
-                setLoading(false);
-                return;
+          setAnimal(prev => {
+            // If local state is already verified, keep local verified state or backend verified state
+            if (prev && (prev.status === 'VACCINATED' || (prev.vaccinations && prev.vaccinations.length > 0))) {
+              if (data.animal.status !== 'VACCINATED' && (!data.animal.vaccinations || data.animal.vaccinations.length === 0)) {
+                return prev;
               }
             }
-          } catch(e) {}
-          
-          const nowStr = new Date().toISOString().split('T')[0];
-          setAnimal({
-            id: "anim-gen-" + Date.now(),
-            farmId: "farm-1",
-            tagNumber: currentTag,
-            species: "Cattle",
-            breed: "Holstein Cross",
-            ageMonths: 36,
-            gender: "FEMALE",
-            status: "INFECTED",
-            suspectedDisease: "Lumpy Skin Disease (LSD)",
-            assignedVetName: "Dr. Rajesh Sharma",
-            vaccinations: [],
-            medicalHistory: [
-              {
-                date: nowStr,
-                diagnosis: "🔴 INFECTED — Suspected Lumpy Skin Disease (LSD)",
-                vetName: "Dr. Rajesh Sharma",
-                prescriptions: ["Quarantine Shed Isolation", "Antipyretic & Antihistamine Barrier"],
-                remarks: "Emergency Field Registration — Biosecurity Passport Active"
-              }
-            ]
+            return data.animal;
           });
         }
       } catch (err) {
         console.error("Error loading passport:", err);
-        try {
-          const cached = localStorage.getItem('pr_animalsList');
-          if (cached) {
-            const list = JSON.parse(cached);
-            const found = list.find(a => a.tagNumber === currentTag || a.id === currentTag);
-            if (found) {
-              setAnimal(found);
-              setLoading(false);
-              return;
-            }
-          }
-        } catch(e) {}
-
-        const nowStr = new Date().toISOString().split('T')[0];
-        setAnimal({
-          id: "anim-gen-" + Date.now(),
-          farmId: "farm-1",
-          tagNumber: currentTag,
-          species: "Cattle",
-          breed: "Holstein Cross",
-          ageMonths: 36,
-          gender: "FEMALE",
-          status: "INFECTED",
-          suspectedDisease: "Lumpy Skin Disease (LSD)",
-          assignedVetName: "Dr. Rajesh Sharma",
-          vaccinations: [],
-          medicalHistory: [
-            {
-              date: nowStr,
-              diagnosis: "🔴 INFECTED — Suspected Lumpy Skin Disease (LSD)",
-              vetName: "Dr. Rajesh Sharma",
-              prescriptions: ["Quarantine Shed Isolation", "Antipyretic & Antihistamine Barrier"],
-              remarks: "Emergency Field Registration — Biosecurity Passport Active"
-            }
-          ]
-        });
       } finally {
         setLoading(false);
       }
