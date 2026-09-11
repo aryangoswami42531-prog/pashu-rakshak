@@ -34,6 +34,12 @@ export const VetDashboard = ({ activeTab = 'QUEUE', setActiveTab }) => {
   const completedVisitsCount = completedVisits.length;
 
   const updateStatus = async (reqId, status, etaMinutes = 20) => {
+    // Instant zero-delay context & localStorage state update
+    if (updateRequestInContext) {
+      updateRequestInContext(reqId, { status, etaMinutes });
+    }
+    showToast(status === 'ACCEPTED' ? `🚨 Dispatch Request Accepted! Vet Officer En Route (ETA ${etaMinutes}m).` : "Status Updated", "success");
+
     try {
       const res = await fetch(`/api/vets/requests/${reqId}`, {
         method: 'PUT',
@@ -47,14 +53,10 @@ export const VetDashboard = ({ activeTab = 'QUEUE', setActiveTab }) => {
       });
       const data = await res.json();
       if (data.success) {
-        if (updateRequestInContext) {
-          updateRequestInContext(reqId, { status, etaMinutes });
-        }
-        showToast(data.message, "success");
         refreshAllData();
       }
     } catch (err) {
-      showToast("Status update failed", "error");
+      console.error("Status update sync error:", err);
     }
   };
 
