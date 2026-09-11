@@ -11,6 +11,7 @@ import { BiosecurityAlertModal } from './components/Common/BiosecurityAlertModal
 import { SectionNavigationLoader } from './components/Common/SectionNavigationLoader';
 import { SplashScreen } from './components/Common/SplashScreen';
 import { LoginPortal } from './components/Common/LoginPortal';
+import { PublicPassportView } from './components/Common/PublicPassportView';
 import { ShieldCheck, Menu } from 'lucide-react';
 
 const MainContent = ({ activeTab, setActiveTab, onOpenComplaint }) => {
@@ -49,6 +50,27 @@ export function AppContent() {
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
   const [isBiosecurityAlertOpen, setIsBiosecurityAlertOpen] = useState(false);
 
+  // Unauthenticated Public Passport View route detection (/passport/:id or ?passport=:id or #passport/:id)
+  const [publicPassportTag, setPublicPassportTag] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    const search = window.location.search;
+    const hash = window.location.hash;
+    if (path.startsWith('/passport/')) {
+      const tag = path.replace('/passport/', '').trim();
+      return tag || null;
+    }
+    if (search.includes('passport=')) {
+      const params = new URLSearchParams(search);
+      return params.get('passport');
+    }
+    if (hash.startsWith('#passport/')) {
+      const tag = hash.replace('#passport/', '').trim();
+      return tag || null;
+    }
+    return null;
+  });
+
   // Session splash screen check (plays video + voiceover.mp3 on site load)
   const [showSplash, setShowSplash] = useState(true);
 
@@ -65,7 +87,7 @@ export function AppContent() {
     setTimeout(() => {
       setActiveTab(newTab);
       setIsNavigating(false);
-    }, 950); // Exactly 0.95s (adds 0.5s for ideal smooth visibility)
+    }, 950); // Exactly 0.95s
   };
 
   const handleSelectRoleFromPortal = (roleKey) => {
@@ -83,6 +105,21 @@ export function AppContent() {
   const handleLogout = () => {
     setIsLoggedIn(false);
   };
+
+  // Render Unauthenticated Public Passport View if route matches
+  if (publicPassportTag) {
+    return (
+      <PublicPassportView 
+        tagNumber={publicPassportTag} 
+        onBack={() => {
+          setPublicPassportTag(null);
+          if (typeof window !== 'undefined') {
+            window.history.pushState({}, '', '/');
+          }
+        }} 
+      />
+    );
+  }
 
   // Render Login Portal screen if user is not logged in
   if (!isLoggedIn) {

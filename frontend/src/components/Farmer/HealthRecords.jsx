@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   ShieldCheck, Syringe, Calendar, UserCheck, Key, Plus, CheckCircle2, 
-  X, Tag, FileText, Search, AlertTriangle, ShieldAlert, Clock, Stethoscope, AlertOctagon
+  X, Tag, FileText, Search, AlertTriangle, ShieldAlert, Clock, Stethoscope, 
+  AlertOctagon, QrCode, ExternalLink, Copy, Check
 } from 'lucide-react';
+import { PublicPassportView } from '../Common/PublicPassportView';
 
 export const HealthRecords = () => {
   const { t, animalsList, refreshAllData, showToast } = useApp();
   const [selectedAnimal, setSelectedAnimal] = useState(null);
+  const [activeQrPassportTag, setActiveQrPassportTag] = useState(null);
   const [verifyingHash, setVerifyingHash] = useState(null);
   const [verifiedResult, setVerifiedResult] = useState(null);
+  const [copiedTag, setCopiedTag] = useState(null);
 
   const verifyHashOnLedger = async (hash) => {
     setVerifyingHash(hash);
@@ -32,6 +37,24 @@ export const HealthRecords = () => {
     }
   };
 
+  const copyPassportLink = (tagNumber) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pashu-rakshak-seven.vercel.app';
+    const url = `${origin}/passport/${tagNumber}`;
+    navigator.clipboard.writeText(url);
+    setCopiedTag(tagNumber);
+    showToast("Scannable QR Passport link copied to clipboard!", "success");
+    setTimeout(() => setCopiedTag(null), 2500);
+  };
+
+  if (activeQrPassportTag) {
+    return (
+      <PublicPassportView 
+        tagNumber={activeQrPassportTag} 
+        onBack={() => setActiveQrPassportTag(null)} 
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 text-white">
       {/* Top Banner */}
@@ -45,7 +68,7 @@ export const HealthRecords = () => {
             {t('nav.healthRecords')}
           </h2>
           <p className="text-slate-300 text-xs mt-1">
-            Official cryptographic health passports. Digital cards are <strong>automatically created when an emergency vet visit is dispatched</strong>.
+            Official cryptographic health passports with <strong>scannable QR codes</strong>. Scannable on any smartphone for tamper-proof biosecurity verification.
           </p>
         </div>
 
@@ -59,8 +82,8 @@ export const HealthRecords = () => {
       <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-start gap-3 shadow-md">
         <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold text-white">Automated Health Card & Red Spot Workflow: </span>
-          When a farmer dispatches a case, the Digital Passport displays <strong>`WAITING FOR VET INSPECTION & VERIFICATION`</strong> and a <strong>Red Spot</strong> appears on the Govt GIS Map. Once the Vet Officer completes & logs field inspection, the card turns into a <strong>Verified SHA-256 Passport</strong> and the Red Spot auto-clears from the map!
+          <span className="font-bold text-white">Automated QR Digital Passport Workflow: </span>
+          Each animal is assigned a <strong>scannable QR Code</strong> linked to its SHA-256 Ledger Passport. Scan with any camera or click <strong>`View QR Passport`</strong> for instant public verification.
         </div>
       </div>
 
@@ -71,12 +94,14 @@ export const HealthRecords = () => {
           const latestVaccine = hasVaccines ? animal.vaccinations[0] : null;
           const isSwine = animal.species === 'Swine' || animal.species === 'Pig';
           const isPoultry = animal.species === 'Poultry';
+          const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pashu-rakshak-seven.vercel.app';
+          const passportPublicUrl = `${origin}/passport/${animal.tagNumber}`;
 
           return (
             <div
               key={animal.id || animal.tagNumber}
               className={`glass-panel p-5 rounded-2xl border transition-all space-y-4 flex flex-col justify-between shadow-xl ${
-                hasVaccines
+                hasVaccines || animal.status === 'VACCINATED'
                   ? 'border-emerald-500/50 bg-slate-900/90'
                   : 'border-amber-500/50 bg-gradient-to-b from-slate-900 to-amber-950/20 ring-1 ring-amber-500/30'
               }`}
@@ -99,14 +124,53 @@ export const HealthRecords = () => {
                   {hasVaccines || animal.status === 'VACCINATED' ? (
                     <span className="bg-emerald-950 text-emerald-300 border border-emerald-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1 shadow-sm">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <span>💉 VACCINATED & VERIFIED PASSPORT</span>
+                      <span>💉 VACCINATED & VERIFIED</span>
                     </span>
                   ) : (
                     <span className="bg-red-950/90 text-red-300 border border-red-500 text-[10px] px-2.5 py-1 rounded-full font-extrabold flex items-center gap-1.5 animate-pulse shadow-md">
                       <AlertOctagon className="w-3 h-3 text-red-400" />
-                      <span>🔴 INFECTED — AWAITING VET VISIT</span>
+                      <span>🔴 INFECTED — AWAITING VET</span>
                     </span>
                   )}
+                </div>
+
+                {/* Scannable QR Code & Quick Verify Link Banner */}
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-3 shadow-inner">
+                  <div className="p-1.5 bg-slate-900 rounded-lg border border-emerald-500/40 shrink-0">
+                    <QRCodeSVG 
+                      value={passportPublicUrl} 
+                      size={64} 
+                      bgColor="#030712" 
+                      fgColor="#10b981" 
+                      level="H" 
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <QrCode className="w-3 h-3 text-emerald-400" />
+                      <span>QR Digital Passport</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Scan with smartphone camera to view verified biosecurity record.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => setActiveQrPassportTag(animal.tagNumber)}
+                        className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono hover:underline"
+                      >
+                        <span>View Public Record</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                      <span className="text-slate-700">•</span>
+                      <button
+                        onClick={() => copyPassportLink(animal.tagNumber)}
+                        className="text-[10px] font-bold text-slate-400 hover:text-white flex items-center gap-1 font-mono"
+                      >
+                        {copiedTag === animal.tagNumber ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedTag === animal.tagNumber ? "Copied" : "Copy URL"}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Health Status & Disease Diagnosis Info */}
@@ -167,13 +231,23 @@ export const HealthRecords = () => {
               </div>
 
               {/* View Full History Trigger */}
-              <button
-                onClick={() => setSelectedAnimal(animal)}
-                className="w-full mt-3 py-2 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-2 btn-pop"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>View Full Medical History</span>
-              </button>
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  onClick={() => setSelectedAnimal(animal)}
+                  className="flex-1 py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-2 btn-pop"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Full History</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveQrPassportTag(animal.tagNumber)}
+                  className="py-2 px-3 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-xs font-bold border border-emerald-700 flex items-center justify-center gap-1.5 transition-all shadow-md"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>QR Passport</span>
+                </button>
+              </div>
             </div>
           );
         })}
@@ -236,7 +310,18 @@ export const HealthRecords = () => {
               )}
             </div>
 
-            <div className="pt-2 text-right">
+            <div className="pt-2 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setActiveQrPassportTag(selectedAnimal.tagNumber);
+                  setSelectedAnimal(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 text-xs font-bold flex items-center gap-2"
+              >
+                <QrCode className="w-4 h-4 text-emerald-400" />
+                <span>Open Full Verified QR Passport</span>
+              </button>
+
               <button
                 onClick={() => setSelectedAnimal(null)}
                 className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold"
