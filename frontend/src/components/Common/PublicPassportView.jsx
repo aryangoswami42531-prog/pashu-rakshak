@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   ShieldCheck, CheckCircle2, Clock, Key, Stethoscope, FileText, 
   Printer, Share2, ArrowLeft, AlertTriangle, AlertOctagon, Award, 
-  ExternalLink, Copy, Check
+  ExternalLink, Copy, Check, Volume2, VolumeX, RotateCcw, Play, Pause
 } from 'lucide-react';
 
 export const PublicPassportView = ({ tagNumber, onBack }) => {
@@ -13,6 +13,15 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
   const [copied, setCopied] = useState(false);
   const [verifyingHash, setVerifyingHash] = useState(null);
   const [verifiedHashResult, setVerifiedHashResult] = useState(null);
+
+  // Audio voiceover state
+  const audioRef = useRef(null);
+  const audioPlayed = useRef(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioTitle, setAudioTitle] = useState('');
 
   const currentTag = tagNumber || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('passport') || window.location.pathname.split('/passport/')[1] || window.location.hash.split('#passport/')[1] : null);
 
@@ -35,7 +44,6 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
         if (data.success && data.animal) {
           setAnimal(data.animal);
         } else {
-          // Check local storage
           try {
             const cached = localStorage.getItem('pr_animalsList');
             if (cached) {
@@ -49,7 +57,6 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
             }
           } catch(e) {}
           
-          // Construct fail-safe digital passport record
           const nowStr = new Date().toISOString().split('T')[0];
           setAnimal({
             id: "anim-gen-" + Date.now(),
@@ -120,6 +127,123 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
     fetchAnimalRecord();
   }, [currentTag]);
 
+  const hasVaccines = animal?.vaccinations && animal.vaccinations.length > 0;
+  const isVaccinated = animal?.status === 'VACCINATED' || animal?.healthStatus === 'HEALTHY' || hasVaccines;
+  const isInfected = animal?.status === 'INFECTED' || animal?.status === 'UNDER_SURVEILLANCE' || animal?.healthStatus === 'SUSPECTED' || animal?.healthStatus === 'INFECTED';
+
+  // Auto-play conditional voiceover on passport page load
+  useEffect(() => {
+    if (!animal || audioPlayed.current) return;
+
+    let targetFile = null;
+    let targetTitle = '';
+
+    if (isVaccinated) {
+      targetFile = '/not_infected.mp3';
+      targetTitle = '🟢 Healthy & Vaccinated Passport Audio';
+    } else if (isInfected) {
+      targetFile = '/infected.mp3';
+      targetTitle = '🔴 Infected / Biosecurity Risk Alert Audio';
+    }
+
+    if (!targetFile) return;
+
+    setAudioFile(targetFile);
+    setAudioTitle(targetTitle);
+
+    const audio = new Audio(targetFile);
+    audioRef.current = audio;
+
+    const playAudio = async () => {
+      try {
+        await audio.play();
+        setIsPlayingAudio(true);
+        setAudioBlocked(false);
+        audioPlayed.current = true;
+      } catch (err) {
+        console.warn("Autoplay blocked by browser policy:", err);
+        setAudioBlocked(true);
+      }
+    };
+
+    playAudio();
+
+    audio.onended = () => {
+      setIsPlayingAudio(false);
+    };
+
+    // Attach interaction listeners to bypass mobile browser autoplay restrictions
+    const handleUserInteraction = () => {
+      if (audioRef.current && !audioPlayed.current) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+          setAudioBlocked(false);
+          audioPlayed.current = true;
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('pointerdown', handleUserInteraction, { once: true });
+    window.addEventListener('touchstart', handleUserInteraction, { once: true });
+    window.addEventListener('scroll', handleUserInteraction, { once: true });
+    window.addEventListener('click', handleUserInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('scroll', handleUserInteraction);
+      window.removeEventListener('click', handleUserInteraction);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, [animal, isVaccinated, isInfected]);
+
+  const togglePlayAudio = () => {
+    if (!audioRef.current && audioFile) {
+      audioRef.current = new Audio(audioFile);
+      audioRef.current.onended = () => setIsPlayingAudio(false);
+    }
+
+    if (audioRef.current) {
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+        setIsPlayingAudio(false);
+      } else {
+        audioRef.current.muted = isMuted;
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+          setAudioBlocked(false);
+          audioPlayed.current = true;
+        }).catch(() => {});
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+    }
+    setIsMuted(!isMuted);
+  };
+
+  const replayAudio = () => {
+    if (!audioFile) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    } else {
+      audioRef.current = new Audio(audioFile);
+      audioRef.current.onended = () => setIsPlayingAudio(false);
+    }
+    audioRef.current.muted = isMuted;
+    audioRef.current.play().then(() => {
+      setIsPlayingAudio(true);
+      setAudioBlocked(false);
+      audioPlayed.current = true;
+    }).catch(() => {});
+  };
+
   const verifyLedgerHash = async (hash) => {
     if (!hash) return;
     setVerifyingHash(hash);
@@ -184,8 +308,6 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
     );
   }
 
-  const hasVaccines = animal.vaccinations && animal.vaccinations.length > 0;
-  const isVaccinated = animal.status === 'VACCINATED' || hasVaccines;
   const isSwine = animal.species === 'Swine' || animal.species === 'Pig';
   const isPoultry = animal.species === 'Poultry';
   const primaryHash = (hasVaccines && animal.vaccinations[0].recordHash) || animal.healthPassportHash || "sha256-e5f4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8";
@@ -256,6 +378,80 @@ export const PublicPassportView = ({ tagNumber, onBack }) => {
               </span>
             </div>
           </div>
+
+          {/* Interactive Voiceover Audio Controls Bar (Print Hidden) */}
+          {audioFile && (
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden transition-all shadow-xl ${
+              isInfected && !isVaccinated 
+                ? 'bg-red-950/70 border-red-500/50 text-red-200' 
+                : 'bg-emerald-950/70 border-emerald-500/50 text-emerald-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-md ${
+                  isPlayingAudio 
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400 animate-pulse' 
+                    : 'bg-slate-900 border-slate-700 text-slate-300'
+                }`}>
+                  <Volume2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-black font-mono flex items-center gap-2">
+                    <span>{audioTitle}</span>
+                    {isPlayingAudio && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600 text-[10px] font-mono uppercase animate-pulse">
+                        Playing
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    {audioBlocked 
+                      ? "⚠️ Tap button below to listen audio voiceover status." 
+                      : isPlayingAudio 
+                        ? "Audio voiceover narration active." 
+                        : "Audio played. Click replay to listen again."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {audioBlocked ? (
+                  <button
+                    onClick={togglePlayAudio}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg btn-pop"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Tap to Play Audio</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={togglePlayAudio}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold flex items-center gap-1.5"
+                    >
+                      {isPlayingAudio ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                      <span>{isPlayingAudio ? "Pause" : "Play"}</span>
+                    </button>
+
+                    <button
+                      onClick={replayAudio}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Replay</span>
+                    </button>
+
+                    <button
+                      onClick={toggleMute}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold flex items-center gap-1.5"
+                    >
+                      {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+                      <span>{isMuted ? "Unmute" : "Mute"}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Status Badge Banner */}
           <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 print:border-black flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
