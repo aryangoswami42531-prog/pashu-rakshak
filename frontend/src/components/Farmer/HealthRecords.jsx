@@ -39,7 +39,7 @@ export const HealthRecords = () => {
 
   const copyPassportLink = (tagNumber) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pashu-rakshak-seven.vercel.app';
-    const url = `${origin}/passport/${tagNumber}`;
+    const url = `${origin}/?passport=${tagNumber}`;
     navigator.clipboard.writeText(url);
     setCopiedTag(tagNumber);
     showToast("Scannable QR Passport link copied to clipboard!", "success");
@@ -95,7 +95,7 @@ export const HealthRecords = () => {
           const isSwine = animal.species === 'Swine' || animal.species === 'Pig';
           const isPoultry = animal.species === 'Poultry';
           const origin = typeof window !== 'undefined' ? window.location.origin : 'https://pashu-rakshak-seven.vercel.app';
-          const passportPublicUrl = `${origin}/passport/${animal.tagNumber}`;
+          const passportPublicUrl = `${origin}/?passport=${animal.tagNumber}`;
 
           return (
             <div

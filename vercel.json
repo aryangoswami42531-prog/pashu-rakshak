@@ -18,6 +18,13 @@
       }
     },
     {
+      "source": "/passport/(.*)",
+      "destination": {
+        "type": "service",
+        "service": "frontend"
+      }
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "type": "service",
